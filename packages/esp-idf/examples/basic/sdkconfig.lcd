@@ -1,0 +1,5 @@
+# Copyright 2026 The QRKude Authors
+# SPDX-License-Identifier: Apache-2.0
+# Enables the ST7789 drawing code (PlatformIO env esp32dev_lcd, or
+# idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.lcd" build).
+CONFIG_EXAMPLE_LCD=y

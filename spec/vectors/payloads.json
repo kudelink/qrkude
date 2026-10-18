@@ -1,0 +1,188 @@
+[
+ {
+  "type": "wifi",
+  "args": {
+   "ssid": "Kude",
+   "password": "secret",
+   "auth": "WPA",
+   "hidden": false
+  },
+  "output": "WIFI:T:WPA;S:Kude;P:secret;;"
+ },
+ {
+  "type": "wifi",
+  "args": {
+   "ssid": "My;Net,\"x\":y\\",
+   "password": "p@ss:word;",
+   "auth": "WEP",
+   "hidden": true
+  },
+  "output": "WIFI:T:WEP;S:My\\;Net\\,\\\"x\\\"\\:y\\\\;P:p@ss\\:word\\;;H:true;;"
+ },
+ {
+  "type": "wifi",
+  "args": {
+   "ssid": "Open",
+   "password": "ignored",
+   "auth": "nopass",
+   "hidden": false
+  },
+  "output": "WIFI:T:nopass;S:Open;;"
+ },
+ {
+  "type": "wifi",
+  "args": {
+   "ssid": "NoAuth",
+   "password": "",
+   "auth": null,
+   "hidden": false
+  },
+  "output": "WIFI:S:NoAuth;;"
+ },
+ {
+  "type": "email",
+  "args": {
+   "to": "hello@kudelink.com",
+   "subject": "Hola qué tal",
+   "body": "a&b=c/d?e #1"
+  },
+  "output": "mailto:hello@kudelink.com?subject=Hola%20qu%C3%A9%20tal&body=a%26b%3Dc%2Fd%3Fe%20%231"
+ },
+ {
+  "type": "email",
+  "args": {
+   "to": "a@b.c",
+   "subject": null,
+   "body": null
+  },
+  "output": "mailto:a@b.c"
+ },
+ {
+  "type": "email",
+  "args": {
+   "to": "a@b.c",
+   "subject": "",
+   "body": "only~body_ok.-"
+  },
+  "output": "mailto:a@b.c?body=only~body_ok.-"
+ },
+ {
+  "type": "sms",
+  "args": {
+   "number": "+34600000000",
+   "message": "Hola!"
+  },
+  "output": "SMSTO:+34600000000:Hola!"
+ },
+ {
+  "type": "sms",
+  "args": {
+   "number": "+1555",
+   "message": null
+  },
+  "output": "SMSTO:+1555"
+ },
+ {
+  "type": "tel",
+  "args": {
+   "number": "+34 600 000 000"
+  },
+  "output": "tel:+34 600 000 000"
+ },
+ {
+  "type": "geo",
+  "args": {
+   "latitude": 40.4168,
+   "longitude": -3.7038
+  },
+  "output": "geo:40.4168,-3.7038"
+ },
+ {
+  "type": "geo",
+  "args": {
+   "latitude": 0,
+   "longitude": 0
+  },
+  "output": "geo:0,0"
+ },
+ {
+  "type": "geo",
+  "args": {
+   "latitude": -33.8688197,
+   "longitude": 151.2092955
+  },
+  "output": "geo:-33.86882,151.209296"
+ },
+ {
+  "type": "geo",
+  "args": {
+   "latitude": 1.0000005,
+   "longitude": -4e-07
+  },
+  "output": "geo:1.000001,0"
+ },
+ {
+  "type": "geo",
+  "args": {
+   "latitude": 95.5,
+   "longitude": -200
+  },
+  "output": "geo:90,-180"
+ },
+ {
+  "type": "geo",
+  "args": {
+   "latitude": -91,
+   "longitude": 180.0000001
+  },
+  "output": "geo:-90,180"
+ },
+ {
+  "type": "vcard",
+  "args": {
+   "firstName": "Ana",
+   "lastName": "García",
+   "organization": "Kude; Labs",
+   "title": "CTO",
+   "phone": "+34 600",
+   "email": "ana@kudelink.com",
+   "url": "https://kudelink.com",
+   "address": "Calle 1, Madrid",
+   "note": "line1\nline2 \\ end"
+  },
+  "output": "BEGIN:VCARD\nVERSION:3.0\nN:García;Ana;;;\nFN:Ana García\nORG:Kude\\; Labs\nTITLE:CTO\nTEL:+34 600\nEMAIL:ana@kudelink.com\nURL:https://kudelink.com\nADR:;;Calle 1\\, Madrid;;;;\nNOTE:line1\\nline2 \\\\ end\nEND:VCARD"
+ },
+ {
+  "type": "vcard",
+  "args": {
+   "firstName": "Solo"
+  },
+  "output": "BEGIN:VCARD\nVERSION:3.0\nN:;Solo;;;\nFN:Solo\nEND:VCARD"
+ },
+ {
+  "type": "vcard",
+  "args": {
+   "lastName": "Apellido",
+   "phone": "123"
+  },
+  "output": "BEGIN:VCARD\nVERSION:3.0\nN:Apellido;;;;\nFN:Apellido\nTEL:123\nEND:VCARD"
+ },
+ {
+  "type": "event",
+  "args": {
+   "summary": "Launch, v1; go",
+   "start": "20261017T100000Z",
+   "end": "20261017T120000Z",
+   "location": "Online",
+   "description": "Multi\nline"
+  },
+  "output": "BEGIN:VEVENT\nSUMMARY:Launch\\, v1\\; go\nDTSTART:20261017T100000Z\nDTEND:20261017T120000Z\nLOCATION:Online\nDESCRIPTION:Multi\\nline\nEND:VEVENT"
+ },
+ {
+  "type": "event",
+  "args": {
+   "summary": "Minimal"
+  },
+  "output": "BEGIN:VEVENT\nSUMMARY:Minimal\nEND:VEVENT"
+ }
+]

@@ -1,0 +1,147 @@
+# Copyright 2026 The QRKude Authors
+# SPDX-License-Identifier: Apache-2.0
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and unit tests (make)
+        run: make -C core all test
+      - name: Build and unit tests (CMake)
+        run: |
+          cmake -S core -B build/core
+          cmake --build build/core
+          ctest --test-dir build/core --output-on-failure
+      - name: Unit tests and hostile inputs under ASan/UBSan
+        run: |
+          gcc -std=c99 -g -O1 -fsanitize=address,undefined,float-cast-overflow -fno-sanitize-recover=all \
+              -Icore/include core/src/*.c core/tests/test_core.c -lm -o /tmp/test_core_san
+          /tmp/test_core_san
+          gcc -std=c99 -g -O1 -fsanitize=address,undefined,float-cast-overflow -fno-sanitize-recover=all \
+              -Icore/include core/src/*.c core/tools/qrkude_cli.c -lm -o /tmp/qrkude_san
+          python3 - <<'PY'
+          import json, subprocess
+          for case in json.load(open("spec/vectors/render.json")):
+              doc = case.get("json") or json.dumps({k: case[k] for k in ("encode", "style", "svg") if k in case})
+              r = subprocess.run(["/tmp/qrkude_san", "--stdin", "-j", doc, "--info"], input=case["text"].encode(),
+                                 capture_output=True)
+              assert b"Sanitizer" not in r.stderr and b"runtime error" not in r.stderr, (case["name"], r.stderr[:400])
+          print("sanitizers: all render vectors clean")
+          PY
+      - name: Conformance vectors are up to date
+        run: |
+          python3 spec/tools/gen_vectors.py
+          git diff --exit-code spec/vectors
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Decode check (zxing-cpp)
+        run: |
+          sudo apt-get install -y libcairo2
+          pip install zxing-cpp cairosvg pillow
+          python spec/tools/check_decode.py --cli core/build/qrkude
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Links and anchors in every Markdown file
+        run: python3 docs/tools/check_links.py
+      - name: Documentation images are up to date
+        run: |
+          make -C core
+          python3 docs/tools/gen_images.py
+          git diff --exit-code docs/images
+
+  web:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: packages/web } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:demo
+
+  python:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.12", "3.13"]
+    defaults: { run: { working-directory: packages/python } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: sudo apt-get install -y libcairo2
+      - run: pip install -e ".[png,test]" zxing-cpp cairosvg
+      - run: pytest
+
+  rust:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: packages/rust } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --all-features
+      - run: cargo test --no-default-features
+      - run: cargo test --no-default-features --features json
+
+  dart:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: packages/dart } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: dart pub get
+      - run: dart analyze
+      - run: dart test
+      - run: dart test -p node
+
+  flutter:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: packages/flutter } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+  qt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y qtbase5-dev ninja-build
+      - run: cmake -S packages/qt -B build/qt -G Ninja
+      - run: cmake --build build/qt
+      - run: QT_QPA_PLATFORM=offscreen ctest --test-dir build/qt --output-on-failure
+
+  embedded:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install platformio zxing-cpp pillow numpy
+      - name: Arduino wrapper on the host (fake displays, decode)
+        run: make -C packages/arduino/test/native check BUILD=/tmp/native PYTHON=python
+      - name: Arduino builds (ESP32, ESP8266, RP2040, SAMD, AVR)
+        run: bash packages/arduino/test/ci.sh /tmp/qrkude-ci
+      - name: LVGL widget (LVGL 8.3 to 9.6, decode)
+        run: PLATFORMIO_WORKSPACE_DIR=/tmp/lvgl-ws sh packages/lvgl/test/run_tests.sh /tmp/lvgl-out python

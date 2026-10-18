@@ -1,0 +1,23 @@
+# Copyright 2026 The QRKude Authors
+# SPDX-License-Identifier: Apache-2.0
+name: qrkude
+description: >-
+  Styled QR codes in pure Dart: dot, fluid, liquid and bar modules, custom
+  eyes, gradients, logos, frames and labels. Byte-identical SVG output with
+  every QRKude port. Works on the VM and on the web.
+version: 0.1.0
+# The license is Apache-2.0, see the LICENSE file next to this pubspec.
+repository: https://github.com/kudelink/qrkude/tree/main/packages/dart
+issue_tracker: https://github.com/kudelink/qrkude/issues
+topics:
+  - qr
+  - qrcode
+  - svg
+  - barcode
+
+environment:
+  sdk: ^3.4.0
+
+dev_dependencies:
+  lints: ^4.0.0
+  test: ^1.25.0

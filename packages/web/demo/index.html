@@ -1,0 +1,1268 @@
+<!doctype html>
+<!--
+  QRKude Playground - a styled QR code designer built on the qrkude package.
+  Copyright 2026 The QRKude Authors
+  SPDX-License-Identifier: Apache-2.0
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Design styled QR codes: module shapes, custom eyes, gradients, logos and labels. Export SVG, PNG and portable style JSON.">
+<meta name="color-scheme" content="light dark">
+<title>QRKude Playground</title>
+<style>
+:root {
+  --bg: #f4f5f8;
+  --surface: #ffffff;
+  --surface-2: #f0f2f6;
+  --surface-3: #e6e9ef;
+  --border: #e1e5ec;
+  --border-strong: #cdd3dd;
+  --text: #151922;
+  --muted: #5c6575;
+  --faint: #8a93a3;
+  --accent: #3451d1;
+  --accent-hover: #2a43b3;
+  --accent-soft: #e8ecfd;
+  --accent-text: #ffffff;
+  --ok: #237a3b;
+  --ok-soft: #e5f4ea;
+  --warn: #9a6200;
+  --warn-soft: #fdf2dc;
+  --err: #c0262d;
+  --err-soft: #fde8e8;
+  --info: #2c5d9e;
+  --info-soft: #e6f0fb;
+  --checker: #e9ecf1;
+  --shadow: 0 1px 2px rgba(17, 24, 39, .05), 0 6px 24px rgba(17, 24, 39, .06);
+  --radius: 14px;
+  --radius-sm: 9px;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1015;
+    --surface: #161a22;
+    --surface-2: #1d222c;
+    --surface-3: #272d39;
+    --border: #262c37;
+    --border-strong: #353d4b;
+    --text: #e9ecf2;
+    --muted: #a2abbb;
+    --faint: #737d8e;
+    --accent: #8197ff;
+    --accent-hover: #9aabff;
+    --accent-soft: #232a4a;
+    --accent-text: #0e1015;
+    --ok: #6cc788;
+    --ok-soft: #17291e;
+    --warn: #f0b350;
+    --warn-soft: #2d2412;
+    --err: #ff8a8f;
+    --err-soft: #331a1c;
+    --info: #8ab8f0;
+    --info-soft: #172333;
+    --checker: #222834;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 28px rgba(0, 0, 0, .25);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1015;
+  --surface: #161a22;
+  --surface-2: #1d222c;
+  --surface-3: #272d39;
+  --border: #262c37;
+  --border-strong: #353d4b;
+  --text: #e9ecf2;
+  --muted: #a2abbb;
+  --faint: #737d8e;
+  --accent: #8197ff;
+  --accent-hover: #9aabff;
+  --accent-soft: #232a4a;
+  --accent-text: #0e1015;
+  --ok: #6cc788;
+  --ok-soft: #17291e;
+  --warn: #f0b350;
+  --warn-soft: #2d2412;
+  --err: #ff8a8f;
+  --err-soft: #331a1c;
+  --info: #8ab8f0;
+  --info-soft: #172333;
+  --checker: #222834;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 28px rgba(0, 0, 0, .25);
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---- top bar ---- */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px max(16px, calc((100vw - 1240px) / 2));
+  background: var(--bg);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: saturate(1.4) blur(10px);
+  -webkit-backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 16px; letter-spacing: -.01em; }
+.brand-mark { width: 30px; height: 30px; border-radius: 8px; background: var(--text); color: var(--bg); display: grid; place-items: center; overflow: hidden; }
+.brand-mark svg { width: 24px; height: 24px; display: block; }
+.brand small { font-weight: 500; color: var(--muted); font-size: 14px; }
+.topbar .spacer { flex: 1; }
+.pill { font: 12px/1 var(--mono); color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); padding: 6px 8px; border-radius: 999px; white-space: nowrap; }
+.icon-btn {
+  display: inline-grid; place-items: center; width: 34px; height: 34px;
+  border-radius: 9px; border: 1px solid var(--border); background: var(--surface); cursor: pointer;
+}
+.icon-btn:hover { border-color: var(--border-strong); }
+.icon-btn svg { width: 18px; height: 18px; }
+
+/* ---- layout ---- */
+.layout {
+  max-width: 1240px; margin: 0 auto; padding: 20px 16px 48px;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 420px); gap: 20px; align-items: start;
+}
+.controls { display: grid; gap: 14px; min-width: 0; }
+.preview { position: sticky; top: 70px; display: grid; gap: 14px; min-width: 0; }
+@media (max-width: 880px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .preview { position: static; order: -1; }
+  .topbar .pill { display: none; }
+}
+
+/* ---- presets ---- */
+.presets { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px; }
+@media (max-width: 640px) {
+  .presets { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 2px 16px; scroll-snap-type: x proximity; }
+  .presets::-webkit-scrollbar { display: none; }
+  .preset { scroll-snap-align: start; }
+}
+.preset {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px 6px 6px; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--surface); cursor: pointer; white-space: nowrap; font-weight: 550; font-size: 13px;
+}
+.preset:hover { border-color: var(--border-strong); }
+.preset .thumb { width: 28px; height: 28px; border-radius: 7px; overflow: hidden; background: #fff; flex: 0 0 auto; }
+.preset .thumb svg { display: block; width: 100%; height: 100%; }
+
+/* ---- cards ---- */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); min-width: 0; }
+details.card > summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px; font-weight: 620; font-size: 15px; user-select: none;
+}
+details.card > summary::-webkit-details-marker { display: none; }
+details.card > summary .hint { font-weight: 450; color: var(--muted); font-size: 13px; margin-left: auto; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+details.card > summary::after {
+  content: ""; width: 8px; height: 8px; flex: 0 0 auto; margin-left: 4px;
+  border-right: 2px solid var(--faint); border-bottom: 2px solid var(--faint);
+  transform: rotate(45deg) translate(-2px, -2px); transition: transform .15s;
+}
+details.card[open] > summary::after { transform: rotate(-135deg) translate(-1px, -1px); }
+details.card > summary .num {
+  width: 22px; height: 22px; border-radius: 7px; background: var(--accent-soft); color: var(--accent);
+  display: grid; place-items: center; font-size: 12px; font-weight: 700; flex: 0 0 auto;
+}
+.card-body { padding: 2px 16px 16px; display: grid; gap: 14px; }
+.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px 16px; }
+.field { display: grid; gap: 6px; min-width: 0; }
+.field > .lbl { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.field > .lbl output { font: 12px var(--mono); color: var(--text); }
+.sub { font-size: 12px; color: var(--faint); }
+.divider { height: 1px; background: var(--border); margin: 2px 0; }
+
+input[type="text"], input[type="url"], input[type="email"], input[type="tel"], input[type="password"], select, textarea {
+  width: 100%; min-width: 0; padding: 9px 11px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong); background: var(--surface); outline: none;
+}
+textarea { resize: vertical; min-height: 64px; }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+input[type="range"] { width: 100%; accent-color: var(--accent); margin: 4px 0; }
+input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
+.check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 500; }
+
+/* segmented control */
+.seg { display: inline-flex; flex-wrap: wrap; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 3px; gap: 2px; max-width: 100%; }
+.seg label { position: relative; }
+.seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.seg span { display: block; padding: 6px 12px; border-radius: 7px; font-size: 13px; font-weight: 550; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.seg input:checked + span { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.seg input:focus-visible + span { outline: 2px solid var(--accent); }
+.paint > .seg { display: flex; }
+.paint > .seg label { flex: 1 1 auto; }
+.paint > .seg span { text-align: center; }
+
+/* tabs */
+.tabs { display: flex; gap: 4px; box-shadow: inset 0 -1px var(--border); margin: 0 -16px; padding: 0 16px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { border: 0; background: none; padding: 9px 12px; cursor: pointer; font-weight: 600; color: var(--muted); box-shadow: inset 0 -2px transparent; white-space: nowrap; }
+.tab:hover { color: var(--text); }
+.tab[aria-selected="true"] { color: var(--accent); box-shadow: inset 0 -2px var(--accent); }
+.tabpanel[hidden] { display: none; }
+
+/* shape tiles */
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 8px; }
+.tile { position: relative; }
+.tile input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.tile .face {
+  display: grid; gap: 5px; justify-items: center; padding: 9px 4px 7px; border-radius: 11px;
+  border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; color: var(--text);
+  transition: border-color .12s, background .12s;
+}
+.tile .face svg { width: 38px; height: 38px; display: block; }
+.tile .face small { font-size: 11.5px; color: var(--muted); font-weight: 550; }
+.tile:hover .face { border-color: var(--border-strong); }
+.tile input:checked + .face { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.tile input:checked + .face small { color: var(--accent); }
+.tile input:focus-visible + .face { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* color field */
+.color { display: flex; align-items: center; gap: 0; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); overflow: hidden; min-width: 0; }
+.color:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.color .swatch { position: relative; width: 38px; height: 38px; flex: 0 0 auto; border-right: 1px solid var(--border); background-image: linear-gradient(45deg, var(--checker) 25%, transparent 25%, transparent 75%, var(--checker) 75%), linear-gradient(45deg, var(--checker) 25%, transparent 25%, transparent 75%, var(--checker) 75%); background-size: 10px 10px; background-position: 0 0, 5px 5px; }
+.color .swatch i { position: absolute; inset: 0; }
+.color .swatch input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; border: 0; padding: 0; }
+.color input[type="text"] { border: 0; box-shadow: none; font-family: var(--mono); font-size: 13px; border-radius: 0; }
+
+/* paint editor */
+.paint { display: grid; gap: 10px; }
+.stops { display: grid; gap: 8px; }
+.stop { display: grid; grid-template-columns: minmax(0, 1fr) minmax(70px, 120px) auto; gap: 8px; align-items: center; }
+.stop .off { display: grid; gap: 2px; }
+.stop .off small { font: 11px var(--mono); color: var(--muted); }
+.gradbar { height: 12px; border-radius: 6px; border: 1px solid var(--border); }
+.mini-btn { border: 1px solid var(--border-strong); background: var(--surface); border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 12.5px; font-weight: 600; }
+.mini-btn:hover { border-color: var(--accent); color: var(--accent); }
+.mini-btn[disabled] { opacity: .45; cursor: not-allowed; }
+.x-btn { width: 30px; height: 30px; padding: 0; display: grid; place-items: center; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; color: var(--muted); }
+.x-btn:hover { color: var(--err); border-color: var(--err); }
+.x-btn[disabled] { visibility: hidden; }
+
+/* logo upload */
+.drop {
+  display: flex; align-items: center; gap: 12px; padding: 12px; border: 1.5px dashed var(--border-strong);
+  border-radius: 12px; background: var(--surface-2); cursor: pointer; transition: border-color .12s, background .12s;
+}
+.drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop .logo-thumb { width: 48px; height: 48px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); display: grid; place-items: center; overflow: hidden; flex: 0 0 auto; }
+.drop .logo-thumb img { max-width: 40px; max-height: 40px; }
+.drop .logo-thumb svg { width: 22px; height: 22px; color: var(--faint); }
+.drop strong { display: block; font-size: 13.5px; }
+.drop span { font-size: 12.5px; color: var(--muted); }
+.logo-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---- preview ---- */
+.stage {
+  position: relative; padding: 22px; display: grid; place-items: center;
+  border-bottom: 1px solid var(--border); border-radius: var(--radius) var(--radius) 0 0;
+  background-color: var(--surface-2);
+  background-image: linear-gradient(45deg, var(--checker) 25%, transparent 25%, transparent 75%, var(--checker) 75%), linear-gradient(45deg, var(--checker) 25%, transparent 25%, transparent 75%, var(--checker) 75%);
+  background-size: 16px 16px; background-position: 0 0, 8px 8px;
+}
+.qr { width: 100%; max-width: 340px; aspect-ratio: 1 / 1; display: grid; place-items: center; }
+.qr svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 6px 18px rgba(17, 24, 39, .14)); }
+.qr .error { font-weight: 600; color: var(--err); text-align: center; padding: 24px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 16px 0; }
+.meta span { font: 12px/1 var(--mono); padding: 6px 8px; border-radius: 7px; background: var(--surface-2); border: 1px solid var(--border); color: var(--muted); }
+.meta b { color: var(--text); font-weight: 600; }
+.panel { padding: 14px 16px; display: grid; gap: 12px; }
+.panel h3 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); font-weight: 700; }
+
+.meter { display: grid; gap: 6px; }
+.meter-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 13px; font-weight: 600; }
+.meter-head output { font: 600 13px var(--mono); }
+.meter-track { position: relative; height: 10px; border-radius: 5px; background: var(--surface-3); overflow: hidden; }
+.meter-fill { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 5px; transition: width .2s, background-color .2s; }
+.meter-marks { position: relative; height: 14px; font: 10.5px var(--mono); color: var(--faint); }
+.meter-marks span { position: absolute; transform: translateX(-50%); }
+.meter p { margin: 0; font-size: 12.5px; color: var(--muted); }
+
+.notes { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.note { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 8px; padding: 9px 11px; border-radius: 10px; font-size: 13px; align-items: start; }
+.note svg { width: 18px; height: 18px; margin-top: 1px; }
+.note b { display: block; font-weight: 650; }
+.note.ok { background: var(--ok-soft); color: var(--ok); }
+.note.warn { background: var(--warn-soft); color: var(--warn); }
+.note.err { background: var(--err-soft); color: var(--err); }
+.note.info { background: var(--info-soft); color: var(--info); }
+.note span { color: var(--text); opacity: .86; }
+
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface);
+  cursor: pointer; font-weight: 620; font-size: 13.5px; white-space: nowrap;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn svg { width: 16px; height: 16px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--accent-text); }
+.btn.wide { grid-column: 1 / -1; }
+.export-size { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
+.export-size select { width: auto; padding: 5px 8px; }
+
+pre.json {
+  margin: 0; max-height: 260px; overflow: auto; padding: 12px; border-radius: 10px; background: var(--surface-2);
+  border: 1px solid var(--border); font: 12px/1.5 var(--mono); white-space: pre; tab-size: 2;
+}
+details.json-box > summary { cursor: pointer; font-weight: 600; font-size: 13px; color: var(--muted); padding: 2px 0; }
+details.json-box[open] > summary { margin-bottom: 8px; }
+
+/* dialog + toast */
+dialog { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); padding: 0; width: min(560px, calc(100vw - 32px)); box-shadow: var(--shadow); }
+dialog::backdrop { background: rgba(10, 12, 18, .5); }
+dialog form { display: grid; gap: 12px; padding: 18px; }
+dialog h2 { margin: 0; font-size: 17px; }
+dialog textarea { min-height: 200px; font: 12px/1.5 var(--mono); }
+dialog .dlg-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.toast {
+  position: fixed; left: 50%; bottom: 20px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+  background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: 13px;
+  transition: opacity .2s, transform .2s; z-index: 50; max-width: calc(100vw - 32px);
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast.err { background: var(--err); color: #fff; }
+
+footer { max-width: 1240px; margin: 0 auto; padding: 0 16px 32px; color: var(--faint); font-size: 12.5px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: space-between; }
+footer code { font-family: var(--mono); color: var(--muted); }
+
+@media (max-width: 480px) {
+  .card-body { padding: 2px 12px 14px; }
+  details.card > summary { padding: 13px 12px; }
+  .tabs { margin: 0 -12px; padding: 0 12px; }
+  .stage { padding: 16px; }
+  .qr { max-width: 280px; }
+  .stop { grid-template-columns: minmax(0, 1fr) 72px auto; }
+  .brand small { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark" id="brandMark" aria-hidden="true"></div>
+    <span>QRKude <small>Playground</small></span>
+  </div>
+  <div class="spacer"></div>
+  <span class="pill" id="libVersion">qrkude</span>
+  <button class="icon-btn" id="themeBtn" type="button" title="Theme: auto" aria-label="Switch color theme">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18" /><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg>
+  </button>
+</header>
+
+<main class="layout">
+  <section class="controls" aria-label="Design controls">
+    <div class="presets" id="presets" role="list" aria-label="Presets"></div>
+
+    <details class="card" open>
+      <summary><span class="num">1</span>Content<span class="hint" id="contentHint"></span></summary>
+      <div class="card-body">
+        <div class="tabs" role="tablist">
+          <button class="tab" role="tab" type="button" data-tab="url" aria-selected="true">URL / Text</button>
+          <button class="tab" role="tab" type="button" data-tab="wifi" aria-selected="false">Wi-Fi</button>
+          <button class="tab" role="tab" type="button" data-tab="vcard" aria-selected="false">Contact (vCard)</button>
+        </div>
+        <div class="tabpanel" data-panel="url">
+          <label class="field"><span class="lbl">Link or text</span>
+            <textarea id="urlText" rows="2" spellcheck="false">https://kudelink.com</textarea>
+          </label>
+        </div>
+        <div class="tabpanel" data-panel="wifi" hidden>
+          <div class="row">
+            <label class="field"><span class="lbl">Network name (SSID)</span><input type="text" data-c="wifi.ssid" value="Kude Guest"></label>
+            <label class="field"><span class="lbl">Password</span><input type="text" data-c="wifi.password" value="welcome-2026" autocomplete="off"></label>
+          </div>
+          <div class="row">
+            <label class="field"><span class="lbl">Security</span>
+              <select data-c="wifi.auth"><option value="WPA">WPA / WPA2 / WPA3</option><option value="WEP">WEP</option><option value="nopass">None (open)</option></select>
+            </label>
+            <div class="field"><span class="lbl">&nbsp;</span><label class="check"><input type="checkbox" data-c="wifi.hidden"> Hidden network</label></div>
+          </div>
+        </div>
+        <div class="tabpanel" data-panel="vcard" hidden>
+          <div class="row">
+            <label class="field"><span class="lbl">First name</span><input type="text" data-c="vcard.firstName" value="Ana"></label>
+            <label class="field"><span class="lbl">Last name</span><input type="text" data-c="vcard.lastName" value="García"></label>
+          </div>
+          <div class="row">
+            <label class="field"><span class="lbl">Organization</span><input type="text" data-c="vcard.organization" value="Kudelink"></label>
+            <label class="field"><span class="lbl">Job title</span><input type="text" data-c="vcard.title" value=""></label>
+          </div>
+          <div class="row">
+            <label class="field"><span class="lbl">Phone</span><input type="tel" data-c="vcard.phone" value="+34 600 000 000"></label>
+            <label class="field"><span class="lbl">Email</span><input type="email" data-c="vcard.email" value="ana@kudelink.com"></label>
+          </div>
+          <div class="row">
+            <label class="field"><span class="lbl">Website</span><input type="url" data-c="vcard.url" value="https://kudelink.com"></label>
+            <label class="field"><span class="lbl">Address</span><input type="text" data-c="vcard.address" value=""></label>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="card" open>
+      <summary><span class="num">2</span>Modules<span class="hint" id="modulesHint"></span></summary>
+      <div class="card-body">
+        <div class="tiles" id="moduleTiles" role="radiogroup" aria-label="Module shape"></div>
+        <div class="row">
+          <label class="field" id="sizeField"><span class="lbl">Size <output data-out="modules.size"></output></span>
+            <input type="range" min="0.1" max="1" step="0.05" data-s="modules.size" data-num></label>
+          <label class="field" id="roundField"><span class="lbl">Roundness <output data-out="modules.roundness"></output></span>
+            <input type="range" min="0" max="1" step="0.05" data-s="modules.roundness" data-num></label>
+        </div>
+        <div class="field"><span class="lbl">Color</span><div data-paint="modules.color"></div></div>
+      </div>
+    </details>
+
+    <details class="card" open>
+      <summary><span class="num">3</span>Eyes<span class="hint" id="eyesHint"></span></summary>
+      <div class="card-body">
+        <div class="field"><span class="lbl">Frame</span><div class="tiles" id="frameTiles" role="radiogroup" aria-label="Eye frame shape"></div></div>
+        <div class="field"><span class="lbl">Ball</span><div class="tiles" id="ballTiles" role="radiogroup" aria-label="Eye ball shape"></div></div>
+        <div class="row">
+          <div class="field"><span class="lbl">Frame color</span><div data-paint="eyes.frameColor" data-none="As modules"></div></div>
+          <div class="field"><span class="lbl">Ball color</span><div data-paint="eyes.ballColor" data-none="As modules"></div></div>
+        </div>
+        <div class="divider"></div>
+        <label class="check"><input type="checkbox" id="alignToggle"> Style the alignment patterns like the eyes</label>
+        <div class="row" id="alignFields">
+          <label class="field"><span class="lbl">Alignment frame</span><select data-s="alignment.frame" data-eye></select></label>
+          <label class="field"><span class="lbl">Alignment ball</span><select data-s="alignment.ball" data-eye></select></label>
+        </div>
+        <p class="sub" style="margin:0">Alignment patterns appear from version 2 (longer content).</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="num">4</span>Background &amp; border<span class="hint" id="bgHint"></span></summary>
+      <div class="card-body">
+        <div class="field"><span class="lbl">Background</span><div data-paint="background.color" data-none="Transparent"></div></div>
+        <div class="row">
+          <label class="field"><span class="lbl">Corner radius <output data-out="background.radius"></output></span>
+            <input type="range" min="0" max="12" step="0.5" data-s="background.radius" data-num></label>
+          <label class="field"><span class="lbl">Quiet zone (margin) <output data-out="margin"></output></span>
+            <input type="range" min="0" max="10" step="0.5" data-s="margin" data-num></label>
+        </div>
+        <div class="row">
+          <label class="field"><span class="lbl">Border width <output data-out="border.width"></output></span>
+            <input type="range" min="0" max="4" step="0.25" data-s="border.width" data-num></label>
+          <div class="field"><span class="lbl">Border color</span><div data-color="border.color"></div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="num">5</span>Logo<span class="hint" id="logoHint"></span></summary>
+      <div class="card-body">
+        <label class="drop" id="dropZone">
+          <div class="logo-thumb" id="logoThumb"></div>
+          <div><strong id="dropTitle">Upload a logo</strong><span id="dropSub">PNG, JPG, SVG or WebP, embedded as a data URI. Drop a file here or click.</span></div>
+          <input type="file" id="logoFile" accept="image/*" class="visually-hidden">
+        </label>
+        <div class="logo-actions">
+          <button type="button" class="mini-btn" id="sampleLogo">Use sample logo</button>
+          <button type="button" class="mini-btn" id="removeLogo">Remove logo</button>
+        </div>
+        <div id="logoFields" class="card-body" style="padding:0">
+          <div class="row">
+            <label class="field"><span class="lbl">Size <output data-out="logo.size" data-pct></output></span>
+              <input type="range" min="0.05" max="0.4" step="0.01" data-s="logo.size" data-num></label>
+            <label class="field"><span class="lbl">Clear space <output data-out="logo.margin"></output></span>
+              <input type="range" min="0" max="3" step="0.25" data-s="logo.margin" data-num></label>
+          </div>
+          <div class="row">
+            <div class="field"><span class="lbl">Clear area shape</span>
+              <div class="seg" data-seg="logo.shape"><label><input type="radio" name="logoShape" value="square"><span>Square</span></label><label><input type="radio" name="logoShape" value="rounded"><span>Rounded</span></label><label><input type="radio" name="logoShape" value="circle"><span>Circle</span></label></div>
+            </div>
+            <div class="field"><span class="lbl">&nbsp;</span><label class="check"><input type="checkbox" data-s="logo.excavate" data-bool> Remove modules behind the logo</label></div>
+          </div>
+          <div class="field"><span class="lbl">Logo background</span><div data-color="logo.background" data-nullable="None"></div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="num">6</span>Label<span class="hint" id="labelHint"></span></summary>
+      <div class="card-body">
+        <div class="row">
+          <label class="field"><span class="lbl">Text</span><input type="text" id="labelText" placeholder="e.g. SCAN ME"></label>
+          <div class="field"><span class="lbl">Position</span>
+            <div class="seg" data-seg="label.position"><label><input type="radio" name="labelPos" value="bottom"><span>Bottom</span></label><label><input type="radio" name="labelPos" value="top"><span>Top</span></label></div>
+          </div>
+        </div>
+        <div class="row">
+          <label class="field"><span class="lbl">Font size <output data-out="label.size"></output></span>
+            <input type="range" min="1" max="8" step="0.25" data-s="label.size" data-num></label>
+          <label class="field"><span class="lbl">Font</span>
+            <select data-s="label.font">
+              <option value="sans-serif">Sans-serif</option>
+              <option value="serif">Serif</option>
+              <option value="monospace">Monospace</option>
+              <option value="system-ui, sans-serif">System UI</option>
+              <option value="Georgia, serif">Georgia</option>
+              <option value="&quot;Trebuchet MS&quot;, sans-serif">Trebuchet</option>
+            </select></label>
+        </div>
+        <div class="row">
+          <div class="field"><span class="lbl">Color</span><div data-color="label.color"></div></div>
+          <div class="field"><span class="lbl">&nbsp;</span><label class="check"><input type="checkbox" data-s="label.bold" data-bool> Bold</label></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="num">7</span>Encoding<span class="hint" id="encHint"></span></summary>
+      <div class="card-body">
+        <div class="field"><span class="lbl">Error correction</span>
+          <div class="seg" id="eccSeg">
+            <label><input type="radio" name="ecc" value="auto"><span>Auto</span></label>
+            <label><input type="radio" name="ecc" value="L"><span>L 7%</span></label>
+            <label><input type="radio" name="ecc" value="M"><span>M 15%</span></label>
+            <label><input type="radio" name="ecc" value="Q"><span>Q 25%</span></label>
+            <label><input type="radio" name="ecc" value="H"><span>H 30%</span></label>
+          </div>
+          <span class="sub">Auto uses H when there is a logo, M otherwise. The level is raised for free when it does not grow the code.</span>
+        </div>
+        <div class="row">
+          <label class="field"><span class="lbl">Mask</span>
+            <select id="maskSel"><option value="-1">Automatic (lowest penalty)</option></select></label>
+          <div class="field"><span class="lbl">&nbsp;</span><label class="check"><input type="checkbox" id="boostEcc" checked> Boost error correction</label></div>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <aside class="preview" aria-label="Preview">
+    <div class="card">
+      <div class="stage"><div class="qr" id="qr" role="img" aria-label="QR code preview"></div></div>
+      <div class="meta" id="meta" aria-live="polite"></div>
+      <div class="panel">
+        <div class="meter" id="damage" hidden>
+          <div class="meter-head"><span>Logo damage</span><output id="damageOut">0%</output></div>
+          <div class="meter-track"><div class="meter-fill" id="damageFill"></div></div>
+          <div class="meter-marks"><span style="left:0%;transform:none">0</span><span style="left:58.3%">70%</span><span style="left:83.3%">100%</span></div>
+          <p id="damageText"></p>
+        </div>
+        <ul class="notes" id="notes" aria-live="polite"></ul>
+      </div>
+      <div class="panel" style="border-top:1px solid var(--border)">
+        <h3>Export</h3>
+        <div class="actions">
+          <button class="btn primary" type="button" id="dlSvg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></svg>SVG</button>
+          <button class="btn primary" type="button" id="dlPng"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></svg>PNG</button>
+          <button class="btn" type="button" id="copySvg">Copy SVG</button>
+          <button class="btn" type="button" id="dlJson">Style JSON</button>
+          <button class="btn wide" type="button" id="importBtn">Import style JSON…</button>
+        </div>
+        <label class="export-size">PNG size
+          <select id="pngSize"><option value="512">512 px</option><option value="1024" selected>1024 px</option><option value="2048">2048 px</option></select>
+        </label>
+        <details class="json-box"><summary>Style JSON</summary><pre class="json" id="jsonOut"></pre></details>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<footer>
+  <span>QRKude · Apache-2.0 · the same style JSON renders identically in every QRKude port.</span>
+  <span><code>npm install qrkude</code></span>
+</footer>
+
+<dialog id="importDlg">
+  <form method="dialog">
+    <h2>Import style JSON</h2>
+    <p class="sub" style="margin:0">Paste a QRKude document (<code>{"encode", "style", "svg"}</code>) or a bare style object, or choose a .json file.</p>
+    <textarea id="importText" spellcheck="false" placeholder='{"style": {"modules": {"shape": "fluid"}}}'></textarea>
+    <div class="dlg-actions">
+      <label class="mini-btn" style="margin-right:auto">Choose file…<input type="file" id="importFile" accept=".json,application/json" class="visually-hidden"></label>
+      <button class="btn" value="cancel" formnovalidate>Cancel</button>
+      <button class="btn primary" value="ok" id="importOk">Import</button>
+    </div>
+  </form>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="../dist/qrkude.min.js"></script>
+<script>
+(function () {
+  'use strict';
+  var Q = window.QRKude;
+  var $ = function (sel, root) { return (root || document).querySelector(sel); };
+  var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
+
+  /* ---- state ------------------------------------------------------------ */
+
+  var SAMPLE_LOGO = 'data:image/svg+xml;base64,' + btoa(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+    '<rect width="64" height="64" rx="16" fill="#3451d1"/>' +
+    '<path d="M20 14h9v15l13-15h11L38 31l16 19H42L29 34v16h-9z" fill="#fff"/></svg>');
+
+  function baseStyle() { return Q.styleToJson(Q.defaultStyle()); }
+
+  /* label / logo / alignment are always objects in the UI state; documentJson()
+   * writes null for an empty label or a logo of size 0 */
+  var LABEL_DEFAULT = { text: '', font: 'sans-serif', size: 4, color: '#000000', position: 'bottom', bold: true };
+  var LOGO_DEFAULT = { href: null, size: 0, margin: 1, shape: 'square', excavate: true, background: null };
+  function normalize(style) {
+    style.label = Object.assign({}, LABEL_DEFAULT, style.label || {});
+    if (!style.label.font) style.label.font = 'sans-serif';
+    if (style.label.text == null) style.label.text = '';
+    style.logo = Object.assign({}, LOGO_DEFAULT, style.logo || {});
+    if (!style.alignment) style.alignment = { frame: null, ball: null };
+    return style;
+  }
+
+  function merge(target, src) {
+    Object.keys(src).forEach(function (k) {
+      var v = src[k];
+      if (v && typeof v === 'object' && !Array.isArray(v) && target[k] && typeof target[k] === 'object' && !Array.isArray(target[k]) && !('stops' in v)) merge(target[k], v);
+      else target[k] = JSON.parse(JSON.stringify(v));
+    });
+    return target;
+  }
+
+  function lin(angle, a, b, c) {
+    var colors = c ? [a, b, c] : [a, b];
+    return { type: 'linear', angle: angle, stops: colors.map(function (col, i) { return { offset: i / (colors.length - 1), color: col }; }) };
+  }
+
+  var PRESETS = [
+    { name: 'Classic', style: {} },
+    { name: 'Fluid', style: { margin: 3, modules: { shape: 'fluid', color: '#1d3557' }, eyes: { frame: 'rounded', ball: 'circle' }, background: { radius: 2 } } },
+    { name: 'Liquid', style: { margin: 3, modules: { shape: 'liquid', roundness: 0.9, color: lin(135, '#0b3d91', '#00a896') }, eyes: { frame: 'leaf', ball: 'leaf', frameColor: '#0b3d91', ballColor: '#00a896' }, background: { color: '#ffffff', radius: 3 } } },
+    { name: 'Dots', style: { modules: { shape: 'dot', size: 0.9, color: { type: 'radial', cx: 0.5, cy: 0.5, r: 0.75, stops: [{ offset: 0, color: '#6a11cb' }, { offset: 1, color: '#2575fc' }] } }, eyes: { frame: 'circle', ball: 'circle' }, alignment: { frame: 'circle', ball: 'circle' } } },
+    { name: 'Bars', style: { modules: { shape: 'vbars', size: 0.82, roundness: 1, color: '#2b2d42' }, eyes: { frame: 'drop', ball: 'drop', ballColor: '#ef233c' } } },
+    { name: 'Stars', style: { modules: { shape: 'star', size: 0.95, color: '#1b4332' }, eyes: { frame: 'bevel', ball: 'bevel' }, background: { color: '#f1faee', radius: 2 } } },
+    { name: 'Framed', style: { margin: 2, modules: { shape: 'liquid', color: '#1d3557' }, eyes: { frame: 'rounded', ball: 'rounded' }, background: { color: '#fff8e7', radius: 3 }, border: { width: 1, color: '#1d3557' }, label: { text: 'SCAN ME', color: '#1d3557', size: 3.5, bold: true, font: 'sans-serif', position: 'bottom' } } },
+    { name: 'Logo', style: { modules: { shape: 'fluid', color: '#14213d' }, eyes: { frame: 'rounded', ball: 'circle', ballColor: '#3451d1' }, logo: { href: SAMPLE_LOGO, size: 0.22, margin: 1, shape: 'rounded', excavate: true, background: '#ffffff' } } },
+    { name: 'Sunset', style: { margin: 3, modules: { shape: 'classy', roundness: 0.8, color: lin(45, '#e63946', '#f4a261', '#9d0208') }, eyes: { frame: 'leaf', ball: 'leaf' }, background: { color: '#fffdf8', radius: 4 } } },
+  ];
+
+  var state = {
+    tab: 'url',
+    content: {
+      url: 'https://kudelink.com',
+      wifi: { ssid: 'Kude Guest', password: 'welcome-2026', auth: 'WPA', hidden: false },
+      vcard: { firstName: 'Ana', lastName: 'García', organization: 'Kudelink', title: '', phone: '+34 600 000 000', email: 'ana@kudelink.com', url: 'https://kudelink.com', address: '' },
+    },
+    style: normalize(merge(baseStyle(), PRESETS[1].style)),
+    encode: { ecc: 'auto', mask: -1, boostEcc: true },
+    last: null,
+  };
+
+  function getPath(obj, path) {
+    return path.split('.').reduce(function (o, k) { return o == null ? undefined : o[k]; }, obj);
+  }
+  function setPath(obj, path, value) {
+    var keys = path.split('.');
+    var last = keys.pop();
+    var o = keys.reduce(function (acc, k) { if (acc[k] == null || typeof acc[k] !== 'object') acc[k] = {}; return acc[k]; }, obj);
+    o[last] = value;
+  }
+
+  /* ---- content ---------------------------------------------------------- */
+
+  function payload() {
+    var c = state.content;
+    if (state.tab === 'wifi') return Q.wifi(c.wifi.ssid, c.wifi.password, c.wifi.auth, c.wifi.hidden);
+    if (state.tab === 'vcard') return Q.vcard(c.vcard);
+    return c.url;
+  }
+
+  function contentHint() {
+    var c = state.content;
+    if (state.tab === 'wifi') return 'Wi-Fi · ' + (c.wifi.ssid || 'no SSID');
+    if (state.tab === 'vcard') return 'vCard · ' + ([c.vcard.firstName, c.vcard.lastName].filter(Boolean).join(' ') || 'contact');
+    var t = c.url.replace(/\s+/g, ' ');
+    return t.length > 34 ? t.slice(0, 33) + '…' : t;
+  }
+
+  $$('.tab').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      state.tab = btn.dataset.tab;
+      $$('.tab').forEach(function (b) { b.setAttribute('aria-selected', String(b === btn)); });
+      $$('.tabpanel').forEach(function (p) { p.hidden = p.dataset.panel !== state.tab; });
+      schedule();
+    });
+  });
+  $('#urlText').addEventListener('input', function (e) { state.content.url = e.target.value; schedule(); });
+  $$('[data-c]').forEach(function (el) {
+    var path = el.dataset.c;
+    var v = getPath(state.content, path);
+    if (el.type === 'checkbox') el.checked = !!v; else el.value = v == null ? '' : v;
+    el.addEventListener(el.tagName === 'SELECT' || el.type === 'checkbox' ? 'change' : 'input', function () {
+      setPath(state.content, path, el.type === 'checkbox' ? el.checked : el.value);
+      schedule();
+    });
+  });
+
+  /* ---- shape tiles (drawn by QRKude itself) ----------------------------- */
+
+  var sampleCode = Q.encode('QRKude tiles', { ecc: 'L' });
+  function tileSvg(style, viewBox) {
+    var doc = { style: merge(merge(baseStyle(), { margin: 0, background: { color: null } }), style) };
+    var markup = Q.toSvg(sampleCode, Q.parseStyle(doc), {});
+    return markup.replace(/viewBox="[^"]*"/, 'viewBox="' + viewBox + '" aria-hidden="true"').replace(/#000000/g, 'currentColor');
+  }
+
+  var syncers = [];
+  function addSync(fn) { syncers.push(fn); fn(); }
+
+  function tileGroup(container, name, path, items, render) {
+    items.forEach(function (item) {
+      var label = document.createElement('label');
+      label.className = 'tile';
+      label.innerHTML = '<input type="radio" name="' + name + '" value="' + item + '"><span class="face">' + render(item) + '<small>' + item + '</small></span>';
+      label.firstChild.addEventListener('change', function () { setPath(state.style, path, item); schedule(); });
+      container.appendChild(label);
+    });
+    addSync(function () {
+      var v = getPath(state.style, path);
+      $$('input', container).forEach(function (i) { i.checked = i.value === v; });
+    });
+  }
+
+  tileGroup($('#moduleTiles'), 'moduleShape', 'modules.shape', Q.MODULE_SHAPES, function (shape) {
+    return tileSvg({ modules: { shape: shape, size: 0.9 } }, '9 9 6 6');
+  });
+  tileGroup($('#frameTiles'), 'eyeFrame', 'eyes.frame', Q.EYE_SHAPES, function (shape) {
+    return tileSvg({ eyes: { frame: shape, ball: 'square', frameColor: '#000000', ballColor: '#000000' }, modules: { color: null } }, '-0.5 -0.5 8 8');
+  });
+  tileGroup($('#ballTiles'), 'eyeBall', 'eyes.ball', Q.EYE_SHAPES, function (shape) {
+    return tileSvg({ eyes: { frame: 'square', ball: shape, frameColor: '#000000', ballColor: '#000000' }, modules: { color: null } }, '1.4 1.4 4.2 4.2');
+  });
+
+  /* ---- generic bindings ------------------------------------------------- */
+
+  function fmtOut(v, pct) {
+    if (typeof v !== 'number') return '';
+    return pct ? Math.round(v * 100) + '%' : String(Math.round(v * 100) / 100);
+  }
+
+  $$('[data-s]').forEach(function (el) {
+    var path = el.dataset.s;
+    if (el.hasAttribute('data-eye')) {
+      Q.EYE_SHAPES.forEach(function (s) { var o = document.createElement('option'); o.value = s; o.textContent = s.charAt(0).toUpperCase() + s.slice(1); el.appendChild(o); });
+    }
+    var isBool = el.hasAttribute('data-bool');
+    var isNum = el.hasAttribute('data-num');
+    el.addEventListener(isBool || el.tagName === 'SELECT' ? 'change' : 'input', function () {
+      setPath(state.style, path, isBool ? el.checked : isNum ? Number(el.value) : el.value);
+      schedule();
+    });
+    addSync(function () {
+      var v = getPath(state.style, path);
+      if (isBool) el.checked = !!v;
+      else if (v != null) {
+        if (el.tagName === 'SELECT' && !$$('option', el).some(function (o) { return o.value === String(v); })) {
+          var extra = document.createElement('option');
+          extra.value = extra.textContent = String(v);
+          el.appendChild(extra);
+        }
+        el.value = String(v);
+      }
+    });
+  });
+  function syncOutputs() {
+    $$('output[data-out]').forEach(function (o) { o.textContent = fmtOut(getPath(state.style, o.dataset.out), o.hasAttribute('data-pct')); });
+  }
+  syncers.push(syncOutputs);
+
+  $$('[data-seg]').forEach(function (seg) {
+    var path = seg.dataset.seg;
+    $$('input', seg).forEach(function (i) {
+      i.addEventListener('change', function () { setPath(state.style, path, i.value); schedule(); });
+    });
+    addSync(function () {
+      var v = getPath(state.style, path);
+      $$('input', seg).forEach(function (i) { i.checked = i.value === v; });
+    });
+  });
+
+  /* color field: swatch (<input type=color>) + hex text that accepts #rrggbbaa */
+  function colorField(host, get, set, nullableLabel) {
+    host.innerHTML = '<div class="color"><span class="swatch"><i></i><input type="color" aria-label="Pick a color"></span><input type="text" spellcheck="false" aria-label="Hex color"></div>' +
+      (nullableLabel ? '<label class="check" style="margin-top:6px"><input type="checkbox"> ' + nullableLabel + '</label>' : '');
+    var swatch = $('.swatch i', host);
+    var picker = $('input[type=color]', host);
+    var text = $('input[type=text]', host);
+    var none = nullableLabel ? $('.check input', host) : null;
+    var lastColor = '#000000';
+    function paintSwatch(v) { swatch.style.background = v || 'transparent'; }
+    picker.addEventListener('input', function () {
+      var alpha = /^#[0-9a-f]{8}$/i.test(text.value) ? text.value.slice(7) : '';
+      var v = picker.value + (alpha.toLowerCase() === 'ff' ? '' : alpha);
+      text.value = v; lastColor = v; paintSwatch(v);
+      if (none) none.checked = false;
+      set(v);
+    });
+    text.addEventListener('input', function () {
+      var v = text.value.trim();
+      if (Q.parseColor(v) === null) { text.setAttribute('aria-invalid', 'true'); return; }
+      text.removeAttribute('aria-invalid');
+      lastColor = v; paintSwatch(v);
+      picker.value = Q.colorHex(Q.parseColor(v));
+      if (none) none.checked = false;
+      set(v);
+    });
+    if (none) none.addEventListener('change', function () { set(none.checked ? null : lastColor); sync(); });
+    function sync() {
+      var v = get();
+      var off = v == null;
+      if (none) none.checked = off;
+      if (!off) { lastColor = v; text.value = v; picker.value = Q.colorHex(Q.parseColor(v) || 0); }
+      paintSwatch(off ? null : v);
+      text.disabled = off; picker.disabled = off;
+      host.firstChild.style.opacity = off ? '0.5' : '';
+    }
+    sync();
+    return sync;
+  }
+
+  $$('[data-color]').forEach(function (host) {
+    var path = host.dataset.color;
+    var sync = colorField(host, function () { return getPath(state.style, path); }, function (v) { setPath(state.style, path, v); schedule(); }, host.dataset.nullable);
+    syncers.push(sync);
+  });
+
+  /* paint editor: solid / linear / radial (+ none) */
+  var paintId = 0;
+  function paintEditor(host) {
+    var path = host.dataset.paint;
+    var noneLabel = host.dataset.none;
+    var id = 'p' + (paintId++);
+    var modes = (noneLabel ? [['none', noneLabel]] : []).concat([['solid', 'Solid'], ['linear', 'Linear'], ['radial', 'Radial']]);
+    host.className = 'paint';
+    host.innerHTML = '<div class="seg">' + modes.map(function (m) {
+      return '<label><input type="radio" name="' + id + '" value="' + m[0] + '"><span>' + m[1] + '</span></label>';
+    }).join('') + '</div><div class="pbody"></div>';
+    var body = $('.pbody', host);
+    var cache = { solid: '#1d3557', linear: lin(45, '#6a11cb', '#2575fc'), radial: { type: 'radial', cx: 0.5, cy: 0.5, r: 0.75, stops: [{ offset: 0, color: '#0b3d91' }, { offset: 1, color: '#00a896' }] } };
+    function value() { return getPath(state.style, path); }
+    function mode(v) { return v == null ? 'none' : typeof v === 'string' ? 'solid' : v.type === 'radial' ? 'radial' : 'linear'; }
+    $$('.seg input', host).forEach(function (i) {
+      i.addEventListener('change', function () {
+        var cur = value();
+        if (cur != null) cache[mode(cur)] = JSON.parse(JSON.stringify(cur));
+        var next = i.value === 'none' ? null : i.value === 'solid' ? (cache.solid || '#000000') : JSON.parse(JSON.stringify(cache[i.value]));
+        if (i.value !== 'none' && i.value !== 'solid' && cur && typeof cur === 'object') next.stops = JSON.parse(JSON.stringify(cur.stops));
+        if (i.value !== 'none' && i.value !== 'solid' && typeof cur === 'string') next.stops[0].color = cur;
+        setPath(state.style, path, next);
+        build(); schedule();
+      });
+    });
+    function slider(label, key, min, max, step, pct) {
+      var wrap = document.createElement('label');
+      wrap.className = 'field';
+      wrap.innerHTML = '<span class="lbl">' + label + ' <output></output></span><input type="range" min="' + min + '" max="' + max + '" step="' + step + '">';
+      var input = $('input', wrap), out = $('output', wrap);
+      var v = value()[key];
+      input.value = v; out.textContent = pct ? Math.round(v * 100) + '%' : v + (key === 'angle' ? '°' : '');
+      input.addEventListener('input', function () {
+        var n = Number(input.value);
+        value()[key] = n;
+        out.textContent = pct ? Math.round(n * 100) + '%' : n + (key === 'angle' ? '°' : '');
+        schedule();
+      });
+      return wrap;
+    }
+    function gradientCss(p) {
+      var stops = p.stops.slice().sort(function (a, b) { return a.offset - b.offset; }).map(function (s) {
+        var c = Q.parseColor(s.color) || 0;
+        return Q.cssColor(c) + ' ' + Math.round(Math.min(1, Math.max(0, s.offset)) * 100) + '%';
+      });
+      if (stops.length === 1) stops.push(stops[0]);
+      return p.type === 'radial' ? 'radial-gradient(circle, ' + stops.join(', ') + ')' : 'linear-gradient(90deg, ' + stops.join(', ') + ')';
+    }
+    function build() {
+      var v = value();
+      var m = mode(v);
+      $$('.seg input', host).forEach(function (i) { i.checked = i.value === m; });
+      body.innerHTML = '';
+      if (m === 'none') return;
+      if (m === 'solid') {
+        var h = document.createElement('div');
+        body.appendChild(h);
+        colorField(h, function () { return value(); }, function (c) { setPath(state.style, path, c); cache.solid = c; schedule(); });
+        return;
+      }
+      var grid = document.createElement('div');
+      grid.className = 'paint';
+      var bar = document.createElement('div');
+      bar.className = 'gradbar';
+      bar.style.background = gradientCss(v);
+      grid.appendChild(bar);
+      var row = document.createElement('div');
+      row.className = 'row';
+      if (m === 'linear') row.appendChild(slider('Angle', 'angle', 0, 360, 5));
+      else { row.appendChild(slider('Center X', 'cx', 0, 1, 0.05, true)); row.appendChild(slider('Center Y', 'cy', 0, 1, 0.05, true)); row.appendChild(slider('Radius', 'r', 0.1, 1.5, 0.05, true)); }
+      grid.appendChild(row);
+      var stops = document.createElement('div');
+      stops.className = 'stops';
+      v.stops.forEach(function (st, idx) {
+        var line = document.createElement('div');
+        line.className = 'stop';
+        var colorHost = document.createElement('div');
+        var off = document.createElement('label');
+        off.className = 'off';
+        off.innerHTML = '<small></small><input type="range" min="0" max="1" step="0.01" aria-label="Stop offset">';
+        $('small', off).textContent = 'offset ' + Math.round(Number(st.offset) * 100) + '%';
+        $('input', off).value = String(st.offset);
+        var del = document.createElement('button');
+        del.type = 'button'; del.className = 'x-btn'; del.title = 'Remove stop'; del.setAttribute('aria-label', 'Remove stop');
+        del.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+        del.disabled = v.stops.length <= 2;
+        line.appendChild(colorHost); line.appendChild(off); line.appendChild(del);
+        stops.appendChild(line);
+        colorField(colorHost, function () { return value().stops[idx].color; }, function (c) { value().stops[idx].color = c; bar.style.background = gradientCss(value()); schedule(); });
+        $('input', off).addEventListener('input', function (e) {
+          value().stops[idx].offset = Number(e.target.value);
+          $('small', off).textContent = 'offset ' + Math.round(Number(e.target.value) * 100) + '%';
+          bar.style.background = gradientCss(value());
+          schedule();
+        });
+        del.addEventListener('click', function () { value().stops.splice(idx, 1); build(); schedule(); });
+      });
+      grid.appendChild(stops);
+      var add = document.createElement('button');
+      add.type = 'button'; add.className = 'mini-btn'; add.textContent = '+ Add stop';
+      add.disabled = v.stops.length >= 8;
+      add.style.justifySelf = 'start';
+      add.addEventListener('click', function () {
+        var s = value().stops;
+        var lastStop = s[s.length - 1];
+        s.push({ offset: 1, color: lastStop ? lastStop.color : '#000000' });
+        if (s.length > 1) s[s.length - 2].offset = Math.min(s[s.length - 2].offset, 0.5 + (s.length - 2) * 0.1);
+        build(); schedule();
+      });
+      grid.appendChild(add);
+      body.appendChild(grid);
+    }
+    build();
+    return build;
+  }
+  $$('[data-paint]').forEach(function (host) { syncers.push(paintEditor(host)); });
+
+  /* label text (empty = no label) */
+  var labelText = $('#labelText');
+  labelText.addEventListener('input', function () {
+    state.style.label.text = labelText.value;
+    schedule();
+  });
+  syncers.push(function () { labelText.value = state.style.label.text || ''; });
+
+  /* alignment toggle */
+  var alignToggle = $('#alignToggle');
+  alignToggle.addEventListener('change', function () {
+    state.style.alignment = alignToggle.checked ? { frame: state.style.eyes.frame || 'square', ball: state.style.eyes.ball || 'square' } : { frame: null, ball: null };
+    syncAll(); schedule();
+  });
+  syncers.push(function () {
+    var a = state.style.alignment || {};
+    alignToggle.checked = !!a.frame;
+    $('#alignFields').style.display = a.frame ? '' : 'none';
+    if (a.frame && !a.ball) a.ball = 'square';
+  });
+
+  /* logo */
+  function setLogo(href, name) {
+    var logo = state.style.logo;
+    logo.href = href;
+    if (!(logo.size > 0)) logo.size = 0.22;
+    state.logoName = name || 'logo';
+    syncAll(); schedule();
+  }
+  $('#logoFile').addEventListener('change', function (e) { readLogo(e.target.files && e.target.files[0]); e.target.value = ''; });
+  function readLogo(file) {
+    if (!file) return;
+    if (!/^image\//.test(file.type)) return toast('Please choose an image file', true);
+    if (file.size > 2 * 1024 * 1024) toast('Large logo (' + Math.round(file.size / 1024) + ' KB): the SVG will be big');
+    var reader = new FileReader();
+    reader.onload = function () { setLogo(String(reader.result), file.name); };
+    reader.onerror = function () { toast('Could not read the file', true); };
+    reader.readAsDataURL(file);
+  }
+  var drop = $('#dropZone');
+  ['dragenter', 'dragover'].forEach(function (t) { drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+  ['dragleave', 'drop'].forEach(function (t) { drop.addEventListener(t, function () { drop.classList.remove('over'); }); });
+  drop.addEventListener('drop', function (e) { e.preventDefault(); readLogo(e.dataTransfer.files && e.dataTransfer.files[0]); });
+  $('#sampleLogo').addEventListener('click', function () { setLogo(SAMPLE_LOGO, 'sample logo'); });
+  $('#removeLogo').addEventListener('click', function () { state.style.logo.size = 0; state.style.logo.href = null; syncAll(); schedule(); });
+  syncers.push(function () {
+    var logo = state.style.logo;
+    var has = !!(logo && logo.size > 0);
+    $('#logoFields').style.display = has ? '' : 'none';
+    $('#removeLogo').disabled = !has;
+    var thumb = $('#logoThumb');
+    thumb.innerHTML = '';
+    if (has && logo.href) {
+      var img = document.createElement('img');
+      img.src = logo.href; img.alt = '';
+      thumb.appendChild(img);
+      $('#dropTitle').textContent = state.logoName || 'Logo';
+      $('#dropSub').textContent = 'Click or drop another image to replace it.';
+    } else {
+      thumb.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>';
+      $('#dropTitle').textContent = has ? 'Logo area without image' : 'Upload a logo';
+      $('#dropSub').textContent = 'PNG, JPG, SVG or WebP, embedded as a data URI. Drop a file here or click.';
+    }
+  });
+
+  /* encoding */
+  for (var m = 0; m < 8; m++) { var o = document.createElement('option'); o.value = m; o.textContent = 'Mask ' + m; $('#maskSel').appendChild(o); }
+  $$('#eccSeg input').forEach(function (i) { i.addEventListener('change', function () { state.encode.ecc = i.value; schedule(); }); });
+  $('#maskSel').addEventListener('change', function (e) { state.encode.mask = Number(e.target.value); schedule(); });
+  $('#boostEcc').addEventListener('change', function (e) { state.encode.boostEcc = e.target.checked; schedule(); });
+  syncers.push(function () {
+    $$('#eccSeg input').forEach(function (i) { i.checked = i.value === state.encode.ecc; });
+    $('#maskSel').value = String(state.encode.mask);
+    $('#boostEcc').checked = state.encode.boostEcc;
+  });
+
+  function syncAll() { syncers.forEach(function (fn) { fn(); }); }
+
+  /* ---- document --------------------------------------------------------- */
+
+  function documentJson() {
+    var doc = {};
+    var enc = {};
+    if (state.encode.ecc !== 'auto') enc.ecc = state.encode.ecc;
+    if (state.encode.mask >= 0) enc.mask = state.encode.mask;
+    if (!state.encode.boostEcc) enc.boostEcc = false;
+    if (Object.keys(enc).length) doc.encode = enc;
+    var style = JSON.parse(JSON.stringify(state.style));
+    if (style.label && !style.label.text) style.label = null;
+    if (style.logo && !(style.logo.size > 0)) style.logo = null;
+    doc.style = style;
+    return doc;
+  }
+
+  function loadDocument(input) {
+    var doc = Q.parseDocument(input);
+    state.style = normalize(Q.styleToJson(doc.style));
+    state.encode = {
+      ecc: doc.encode.ecc || 'auto',
+      mask: typeof doc.encode.mask === 'number' ? doc.encode.mask : -1,
+      boostEcc: doc.encode.boostEcc !== false,
+    };
+    state.logoName = state.style.logo && state.style.logo.href ? 'Imported logo' : '';
+    syncAll();
+    render();
+  }
+
+  /* ---- rendering -------------------------------------------------------- */
+
+  var LINT = {
+    'logo-unreadable': ['err', 'Logo too large', 'It hides more data than error correction can recover. Make the logo smaller, reduce its clear space or use a higher ECC level.'],
+    'logo-risky': ['warn', 'Logo is borderline', 'Some scanners may struggle. A slightly smaller logo or less clear space makes it safer.'],
+    'low-contrast': ['err', 'Low contrast', 'Foreground and background are too similar (below 3:1). Use a darker foreground or a lighter background.'],
+    'inverted': ['warn', 'Inverted colors', 'Light modules on a dark background are not supported by every scanner.'],
+    'transparent-background': ['info', 'Transparent background', 'Place the code on a light, plain surface so scanners can find it.'],
+    'quiet-zone': ['warn', 'Small quiet zone', 'Scanners need a clear margin of at least 2 modules (4 is ideal) around the code.'],
+    'small-modules': ['warn', 'Small modules', 'Modules below 60% of their cell are hard to read from a distance or on screens.'],
+    'eye-shapes': ['warn', 'Risky eye shapes', 'This frame / ball combination can confuse finder detection. Diamond frames are the usual culprit.'],
+    'invisible': ['err', 'Invisible modules', 'The modules or the eyes have no visible color (none, or fully transparent).'],
+  };
+  var ICONS = {
+    ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>',
+    warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17.5v.01"/></svg>',
+    err: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></svg>',
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.5v.01"/></svg>',
+  };
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  var queued = false;
+  function schedule() {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(function () { queued = false; render(); });
+  }
+
+  function render() {
+    syncOutputs();
+    var qr = $('#qr');
+    var doc = documentJson();
+    var text = payload();
+    $('#contentHint').textContent = contentHint();
+    var s = state.style;
+    $('#modulesHint').textContent = s.modules.shape;
+    $('#eyesHint').textContent = s.eyes.frame + ' / ' + s.eyes.ball;
+    $('#bgHint').textContent = s.background.color == null ? 'transparent' : typeof s.background.color === 'string' ? s.background.color : s.background.color.type + ' gradient';
+    $('#logoHint').textContent = s.logo && s.logo.size > 0 ? Math.round(s.logo.size * 100) + '% wide' : 'none';
+    $('#labelHint').textContent = s.label && s.label.text ? s.label.text : 'none';
+    var hasSize = ['square', 'dot', 'rounded', 'diamond', 'star', 'hbars', 'vbars'].indexOf(s.modules.shape) >= 0;
+    var hasRound = ['rounded', 'fluid', 'liquid', 'bevel', 'classy', 'hbars', 'vbars'].indexOf(s.modules.shape) >= 0;
+    $('#sizeField').style.opacity = hasSize ? '' : '0.45';
+    $('#roundField').style.opacity = hasRound ? '' : '0.45';
+    $('#jsonOut').textContent = JSON.stringify(doc, function (k, v) { return k === 'href' && typeof v === 'string' && v.length > 120 ? v.slice(0, 60) + '…(' + v.length + ' chars)' : v; }, 2);
+    var g;
+    try {
+      /* in-page SVGs share one id namespace: the preview gets its own gradient
+       * id prefix; exports use the document's svg options */
+      g = Q.generate(text, { encode: doc.encode, style: doc.style, svg: { idPrefix: 'qrk-preview' } });
+    } catch (err) {
+      state.last = null;
+      qr.innerHTML = '<div class="error">' + esc(err.message === 'data too long' ? 'Too much content for a QR code at this error correction level.' : err.message) + '</div>';
+      $('#meta').innerHTML = '';
+      $('#damage').hidden = true;
+      $('#notes').innerHTML = '';
+      $('#encHint').textContent = '';
+      return;
+    }
+    state.last = { g: g, text: text, doc: doc, svg: Q.toSvg(g.code, g.style, {}) };
+    qr.innerHTML = g.svg;
+    qr.setAttribute('aria-label', 'QR code for ' + (text.length > 80 ? text.slice(0, 80) + '…' : text));
+    var c = g.code;
+    $('#encHint').textContent = 'v' + c.version + ' · ECC ' + c.ecc;
+    $('#meta').innerHTML = '<span>Version <b>' + esc(c.version) + '</b></span><span>ECC <b>' + esc(c.ecc) + '</b></span><span>Mask <b>' + esc(c.mask) + '</b></span><span><b>' + esc(c.size + '×' + c.size) + '</b> modules</span><span><b>' + esc(c.mode) + '</b> · ' + Q.utf8(text).length + ' B</span>';
+
+    var hasLogo = s.logo && s.logo.size > 0;
+    $('#damage').hidden = !hasLogo;
+    if (hasLogo) {
+      var d = g.logoDamage;
+      var pct = Math.min(d, 1.2) / 1.2 * 100;
+      var fill = $('#damageFill');
+      fill.style.width = pct + '%';
+      fill.style.backgroundColor = d > 1 ? 'var(--err)' : d > 0.7 ? 'var(--warn)' : 'var(--ok)';
+      $('#damageOut').textContent = Math.round(d * 100) + '%';
+      $('#damageText').textContent = d > 1
+        ? 'The logo hides more codewords than the worst block can correct: this code will not scan.'
+        : 'The logo uses ' + Math.round(d * 100) + '% of the error-correction budget of the worst block' + (d > 0.7 ? ' — little room left for print damage.' : '.');
+    }
+    var notes = g.lint.map(function (f) {
+      var n = LINT[f] || ['warn', f, Q.LINT_MESSAGES[f] || ''];
+      return '<li class="note ' + n[0] + '">' + ICONS[n[0]] + '<div><b>' + esc(n[1]) + '</b><span>' + esc(n[2]) + '</span></div></li>';
+    });
+    if (!g.lint.some(function (f) { return LINT[f] && LINT[f][0] !== 'info'; })) {
+      notes.unshift('<li class="note ok">' + ICONS.ok + '<div><b>Ready to scan</b><span>No readability issues found for this design.</span></div></li>');
+    }
+    $('#notes').innerHTML = notes.join('');
+  }
+
+  /* ---- export / import -------------------------------------------------- */
+
+  function download(blob, name) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+  }
+  var toastTimer;
+  function toast(msg, isErr) {
+    var t = $('#toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isErr ? ' err' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.className = 'toast'; }, 2400);
+  }
+  function needCode() { if (!state.last) { toast('Nothing to export yet', true); return false; } return true; }
+
+  $('#dlSvg').addEventListener('click', function () {
+    if (!needCode()) return;
+    download(new Blob([state.last.svg], { type: 'image/svg+xml' }), 'qrkude.svg');
+  });
+  $('#dlPng').addEventListener('click', function () {
+    if (!needCode()) return;
+    var g = state.last.g;
+    var btn = this;
+    btn.disabled = true;
+    Q.toBlob(g.code, g.style, { size: Number($('#pngSize').value) }).then(function (blob) {
+      download(blob, 'qrkude.png');
+    }).catch(function (e) { toast('PNG export failed: ' + e.message, true); }).then(function () { btn.disabled = false; });
+  });
+  $('#copySvg').addEventListener('click', function () {
+    if (!needCode()) return;
+    var svg = state.last.svg;
+    (navigator.clipboard ? navigator.clipboard.writeText(svg) : Promise.reject(new Error('no clipboard'))).then(function () {
+      toast('SVG copied to the clipboard');
+    }, function () {
+      var ta = document.createElement('textarea');
+      ta.value = svg; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); toast('SVG copied to the clipboard'); } catch (e) { toast('Copy failed', true); }
+      ta.remove();
+    });
+  });
+  $('#dlJson').addEventListener('click', function () {
+    download(new Blob([JSON.stringify(documentJson(), null, 2) + '\n'], { type: 'application/json' }), 'qrkude-style.json');
+  });
+
+  var dlg = $('#importDlg');
+  $('#importBtn').addEventListener('click', function () {
+    $('#importText').value = '';
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+  });
+  $('#importFile').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0];
+    if (!f) return;
+    f.text().then(function (t) { $('#importText').value = t; });
+    e.target.value = '';
+  });
+  dlg.addEventListener('close', function () {
+    if (dlg.returnValue !== 'ok') return;
+    var t = $('#importText').value.trim();
+    if (!t) return;
+    try { loadDocument(t); toast('Style imported'); } catch (e) { toast('Invalid style JSON: ' + e.message, true); }
+  });
+
+  /* ---- presets, theme, init -------------------------------------------- */
+
+  var presetCode = Q.encode('QRKude', { ecc: 'L' });
+  PRESETS.forEach(function (p, index) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'preset'; b.setAttribute('role', 'listitem');
+    var style = Q.parseStyle(merge(baseStyle(), merge(JSON.parse(JSON.stringify(p.style)), { margin: 1, label: null })));
+    b.innerHTML = '<span class="thumb">' + Q.toSvg(presetCode, style, { idPrefix: 'qrk-preset' + index }) + '</span>' + p.name;
+    b.addEventListener('click', function () {
+      var hadLogo = state.style.logo && state.style.logo.size > 0 && state.style.logo.href && state.style.logo.href !== SAMPLE_LOGO;
+      var keepLogo = hadLogo ? state.style.logo : null;
+      state.style = normalize(merge(baseStyle(), p.style));
+      if (keepLogo && !p.style.logo) state.style.logo = keepLogo;
+      if (p.style.logo) state.logoName = 'sample logo';
+      syncAll(); render();
+    });
+    $('#presets').appendChild(b);
+  });
+
+  var themes = ['auto', 'light', 'dark'];
+  var theme = 'auto';
+  try { theme = localStorage.getItem('qrkude-theme') || 'auto'; } catch (e) { /* storage unavailable */ }
+  function applyTheme() {
+    if (theme === 'auto') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', theme);
+    $('#themeBtn').title = 'Theme: ' + theme;
+  }
+  $('#themeBtn').addEventListener('click', function () {
+    theme = themes[(themes.indexOf(theme) + 1) % themes.length];
+    try { localStorage.setItem('qrkude-theme', theme); } catch (e) { /* storage unavailable */ }
+    applyTheme();
+  });
+  applyTheme();
+
+  $('#brandMark').innerHTML = Q.toSvg(Q.encode('QRK', { ecc: 'L' }), Q.parseStyle({ margin: 0, background: { color: null }, modules: { shape: 'fluid', color: '#000000' }, eyes: { frame: 'rounded', ball: 'circle' } }), {}).replace(/#000000/g, 'currentColor');
+  $('#libVersion').textContent = 'qrkude ' + Q.VERSION;
+  window.qrkudePlayground = { state: state, render: render, loadDocument: loadDocument, documentJson: documentJson };
+  syncAll();
+  render();
+})();
+</script>
+</body>
+</html>

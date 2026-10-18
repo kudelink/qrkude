@@ -1,0 +1,50 @@
+# Copyright 2026 The QRKude Authors
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "qrkude"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+license = "Apache-2.0"
+authors = ["The QRKude Authors"]
+description = "Styled QR codes: dot/fluid/liquid/bar modules, custom eyes, gradients, logos and labels. no_std encoder, byte-exact SVG writer and streaming rasterizer."
+readme = "README.md"
+repository = "https://github.com/kudelink/qrkude"
+homepage = "https://github.com/kudelink/qrkude/tree/main/packages/rust"
+keywords = ["qrcode", "qr", "svg", "no-std", "embedded"]
+categories = ["no-std", "embedded", "encoding", "multimedia::images"]
+# tests/vectors.rs and tests/common/ need the repository's spec/vectors: they
+# stay out of the package (its self-contained tests are unit, API and doc tests).
+include = ["src/**/*.rs", "tests/api.rs", "examples/**/*.rs", "Cargo.toml", "README.md", "LICENSE"]
+
+[features]
+default = ["std"]
+# Use the platform math library (bit-identical to the C reference on the same
+# platform). Without it, `libm` is used and the crate is `#![no_std]` + `alloc`.
+std = ["serde?/std", "serde_json?/std"]
+# Cross-language style documents ({"encode", "style", "svg"}) via serde_json.
+json = ["dep:serde", "dep:serde_json"]
+# PNG output via the `png` crate.
+png = ["std", "dep:png"]
+
+[dependencies]
+libm = "0.2"
+serde = { version = "1.0", default-features = false, features = ["alloc"], optional = true }
+# float_roundtrip: numbers parse to the nearest double (SPEC §2)
+serde_json = { version = "1.0", default-features = false, features = ["alloc", "float_roundtrip"], optional = true }
+png = { version = "0.17", optional = true }
+
+[dev-dependencies]
+serde_json = "1.0"
+
+[[example]]
+name = "basic"
+required-features = ["png"]
+
+[[example]]
+name = "styles"
+required-features = ["png"]
+
+[package.metadata.docs.rs]
+all-features = true

@@ -1,0 +1,43 @@
+# QRKude ESP-IDF example configuration
+# Copyright 2026 The QRKude Authors
+# SPDX-License-Identifier: Apache-2.0
+
+menu "QRKude example"
+
+    config EXAMPLE_LCD
+        bool "Draw the QR code on an ST7789 SPI LCD (esp_lcd)"
+        default n
+        help
+            Without an LCD the example only prints to the console.
+
+    if EXAMPLE_LCD
+        config EXAMPLE_LCD_H_RES
+            int "Horizontal resolution"
+            default 240
+        config EXAMPLE_LCD_V_RES
+            int "Vertical resolution"
+            default 240
+        config EXAMPLE_LCD_PIN_SCLK
+            int "SCLK GPIO"
+            default 18
+        config EXAMPLE_LCD_PIN_MOSI
+            int "MOSI GPIO"
+            default 23
+        config EXAMPLE_LCD_PIN_CS
+            int "CS GPIO"
+            default 5
+        config EXAMPLE_LCD_PIN_DC
+            int "DC GPIO"
+            default 16
+        config EXAMPLE_LCD_PIN_RST
+            int "Reset GPIO (-1 = not connected)"
+            default 17
+        config EXAMPLE_LCD_PIN_BL
+            int "Backlight GPIO (-1 = not connected)"
+            default 4
+        config EXAMPLE_LCD_INVERT
+            bool "Invert colors (most IPS ST7789 modules need it)"
+            default y
+    endif
+
+endmenu

@@ -1,0 +1,37 @@
+# Copyright 2026 The QRKude Authors
+# SPDX-License-Identifier: Apache-2.0
+name: qrkude_flutter
+description: >-
+  Styled QR codes for Flutter: a QRKudeView widget and a CustomPainter that
+  draw the QRKude shape model (dot, fluid, liquid and bar modules, custom
+  eyes, gradients, logos and labels), plus PNG export.
+version: 0.1.0
+# Uses the local `qrkude` checkout (path dependency, see below). Remove this
+# line when switching to the published package.
+publish_to: none
+# The license is Apache-2.0, see the LICENSE file next to this pubspec.
+repository: https://github.com/kudelink/qrkude/tree/main/packages/flutter
+issue_tracker: https://github.com/kudelink/qrkude/issues
+topics:
+  - qr
+  - qrcode
+  - widget
+
+environment:
+  sdk: ^3.4.0
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Local checkout of the pure Dart core. To use the published package,
+  # replace the path dependency with a version constraint (and drop
+  # `publish_to: none` above):
+  #   qrkude: ^0.1.0
+  qrkude:
+    path: ../dart
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0

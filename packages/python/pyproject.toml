@@ -1,0 +1,67 @@
+# Copyright 2026 The QRKude Authors
+# SPDX-License-Identifier: Apache-2.0
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "qrkude"
+dynamic = ["version"]
+description = "Styled QR codes (dots, fluid and liquid modules, custom eyes, gradients, logos, labels) as SVG and PNG"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+requires-python = ">=3.9"
+authors = [{ name = "The QRKude Authors" }]
+keywords = ["qr", "qrcode", "qr-code", "svg", "png", "barcode", "styled", "logo", "generator"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/kudelink/qrkude"
+Documentation = "https://github.com/kudelink/qrkude/tree/main/docs"
+Source = "https://github.com/kudelink/qrkude/tree/main/packages/python"
+Issues = "https://github.com/kudelink/qrkude/issues"
+
+[project.optional-dependencies]
+png = ["Pillow>=9"]
+test = ["pytest>=7", "Pillow>=9"]
+
+[project.scripts]
+qrkude = "qrkude.cli:main"
+
+[tool.hatch.version]
+path = "src/qrkude/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/qrkude"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/qrkude", "tests", "README.md", "LICENSE", "NOTICE", "pyproject.toml"]
+
+# The conformance vectors travel with the sdist so that its tests run outside
+# the monorepo (tests/conftest.py looks for tests/vectors first).
+[tool.hatch.build.targets.sdist.force-include]
+"../../spec/vectors/encode.json" = "tests/vectors/encode.json"
+"../../spec/vectors/render.json" = "tests/vectors/render.json"
+"../../spec/vectors/payloads.json" = "tests/vectors/payloads.json"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

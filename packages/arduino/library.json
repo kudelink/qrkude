@@ -1,0 +1,28 @@
+{
+  "name": "QRKude",
+  "version": "0.1.0",
+  "description": "Styled QR codes on any display (Adafruit_GFX, TFT_eSPI, LovyanGFX, Arduino_GFX, OLEDs, LVGL): dot, fluid, liquid and bar modules, custom eyes, gradients, logos; streaming SVG and payload helpers. Portable C99 core without malloc.",
+  "keywords": ["qrcode", "qr-code", "svg", "display", "tft", "oled", "gfx", "lvgl", "wifi"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kudelink/qrkude.git"
+  },
+  "homepage": "https://kudelink.com",
+  "license": "Apache-2.0",
+  "authors": [
+    {
+      "name": "The QRKude Authors",
+      "url": "https://kudelink.com",
+      "maintainer": true
+    }
+  ],
+  "frameworks": "*",
+  "platforms": "*",
+  "headers": ["QRKude.h", "lv_qrkude.h"],
+  "build": {
+    "libLDFMode": "chain"
+  },
+  "export": {
+    "exclude": ["extras/*.pyc", "extras/__pycache__"]
+  }
+}

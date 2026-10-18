@@ -1,0 +1,6 @@
+# Copyright 2026 The QRKude Authors
+# SPDX-License-Identifier: Apache-2.0
+.dart_tool/
+build/
+# library package: no lock file
+pubspec.lock

@@ -1,0 +1,23 @@
+[
+  {"name": "classic", "style": {}},
+  {"name": "squares-gap", "style": {"modules": {"shape": "square", "size": 0.8}}},
+  {"name": "dots", "style": {"modules": {"shape": "dot", "size": 0.9}}},
+  {"name": "rounded", "style": {"modules": {"shape": "rounded", "size": 0.9, "roundness": 0.6}, "eyes": {"frame": "rounded", "ball": "rounded"}}},
+  {"name": "diamond", "style": {"modules": {"shape": "diamond"}, "eyes": {"frame": "bevel", "ball": "diamond"}}},
+  {"name": "star", "style": {"modules": {"shape": "star"}, "eyes": {"frame": "circle", "ball": "circle"}}},
+  {"name": "fluid", "style": {"modules": {"shape": "fluid"}, "eyes": {"frame": "rounded", "ball": "circle"}}},
+  {"name": "liquid", "style": {"modules": {"shape": "liquid"}, "eyes": {"frame": "circle", "ball": "circle"}}},
+  {"name": "bevel", "style": {"modules": {"shape": "bevel"}}},
+  {"name": "classy", "style": {"modules": {"shape": "classy"}, "eyes": {"frame": "leaf", "ball": "leaf"}}},
+  {"name": "hbars", "style": {"modules": {"shape": "hbars", "size": 0.8}}},
+  {"name": "vbars", "style": {"modules": {"shape": "vbars", "size": 0.75}, "eyes": {"frame": "drop", "ball": "drop"}}},
+  {"name": "eyes-dots", "style": {"modules": {"shape": "dot"}, "eyes": {"frame": "dots", "ball": "dots"}}},
+  {"name": "gradient-linear", "style": {"modules": {"shape": "fluid", "color": {"type": "linear", "angle": 45, "stops": [{"offset": 0, "color": "#6a11cb"}, {"offset": 1, "color": "#2575fc"}]}}, "eyes": {"frame": "rounded", "ball": "circle", "frameColor": "#e63946"}}},
+  {"name": "gradient-radial", "style": {"modules": {"shape": "dot", "color": {"type": "radial", "stops": [{"offset": 0, "color": "#0b3d91"}, {"offset": 1, "color": "#00a896"}]}}, "eyes": {"frame": "circle", "ball": "circle", "ballColor": "#e63946"}}},
+  {"name": "alignment", "text": "https://kudelink.com/alignment/patterns/styled/as/eyes/0123456789", "style": {"modules": {"shape": "dot"}, "eyes": {"frame": "circle", "ball": "circle"}, "alignment": {"frame": "circle", "ball": "circle"}}},
+  {"name": "frame-label", "text": "https://kudelink.com", "style": {"margin": 2, "modules": {"shape": "liquid"}, "background": {"color": "#fff8e7", "radius": 3}, "border": {"width": 1, "color": "#1d3557"}, "label": {"text": "SCAN ME", "color": "#1d3557"}}},
+  {"name": "logo", "text": "https://kudelink.com/logo", "style": {"modules": {"shape": "fluid"}, "eyes": {"frame": "rounded", "ball": "rounded"}, "logo": {"href": "$LOGO", "size": 0.22, "shape": "circle", "background": "#ffffff"}}},
+  {"name": "logo-square", "text": "https://kudelink.com/logo/square", "style": {"modules": {"shape": "square"}, "logo": {"href": "$LOGO", "size": 0.25, "margin": 0.5}}},
+  {"name": "dark", "text": "https://kudelink.com/dark", "style": {"modules": {"shape": "liquid", "color": "#f1faee"}, "background": {"color": "#1d3557", "radius": 4}}},
+  {"name": "transparent", "text": "https://kudelink.com/transparent", "style": {"modules": {"shape": "bevel", "color": "#1d3557cc"}, "background": {"color": null}}}
+]

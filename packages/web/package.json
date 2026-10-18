@@ -1,0 +1,80 @@
+{
+  "name": "qrkude",
+  "version": "0.1.0",
+  "description": "Styled QR codes for the web: dot, fluid, liquid and bar modules, custom eyes, gradients, logos and labels. Byte-identical SVG with every QRKude port.",
+  "license": "Apache-2.0",
+  "author": "The QRKude Authors",
+  "homepage": "https://github.com/kudelink/qrkude/tree/main/packages/web#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kudelink/qrkude.git",
+    "directory": "packages/web"
+  },
+  "bugs": {
+    "url": "https://github.com/kudelink/qrkude/issues"
+  },
+  "keywords": [
+    "qr",
+    "qrcode",
+    "qr-code",
+    "svg",
+    "canvas",
+    "styled",
+    "logo",
+    "web-component"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/types/cjs/index.d.cts",
+  "unpkg": "./dist/qrkude.min.js",
+  "jsdelivr": "./dist/qrkude.min.js",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/types/esm/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/types/cjs/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./element": {
+      "import": {
+        "types": "./dist/types/esm/element.d.mts",
+        "default": "./dist/element.mjs"
+      },
+      "require": {
+        "types": "./dist/types/cjs/element.d.cts",
+        "default": "./dist/element.cjs"
+      }
+    },
+    "./qrkude.min.js": "./dist/qrkude.min.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": [
+    "./dist/element.mjs",
+    "./dist/element.cjs",
+    "./dist/qrkude.min.js"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "decode-check": "npm run build && node scripts/decode-check.mjs",
+    "build:demo": "npm run build && node scripts/build-demo.mjs",
+    "prepublishOnly": "npm test"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.0"
+  }
+}

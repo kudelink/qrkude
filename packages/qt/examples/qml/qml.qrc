@@ -1,0 +1,12 @@
+<!DOCTYPE RCC>
+<!--
+  QRKude Qt - QML example resources
+  Copyright 2026 The QRKude Authors
+  SPDX-License-Identifier: Apache-2.0
+-->
+<RCC version="1.0">
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>ActionButton.qml</file>
+    </qresource>
+</RCC>

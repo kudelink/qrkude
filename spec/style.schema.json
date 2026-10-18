@@ -1,0 +1,410 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:qrkude:style:0.1",
+  "title": "QRKude style document",
+  "description": "Cross-language QR code style. See docs/SPEC.md.",
+  "type": "object",
+  "properties": {
+    "encode": {
+      "$ref": "#/$defs/encode"
+    },
+    "style": {
+      "$ref": "#/$defs/style"
+    },
+    "svg": {
+      "$ref": "#/$defs/svg"
+    }
+  },
+  "$defs": {
+    "color": {
+      "type": "string",
+      "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})|transparent)$"
+    },
+    "stop": {
+      "type": "object",
+      "properties": {
+        "offset": {
+          "type": "number"
+        },
+        "color": {
+          "$ref": "#/$defs/color"
+        }
+      },
+      "required": [
+        "offset",
+        "color"
+      ]
+    },
+    "gradient": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "linear",
+            "radial"
+          ],
+          "default": "linear"
+        },
+        "angle": {
+          "type": "number",
+          "default": 0,
+          "description": "Linear: degrees, 0 = left to right, 90 = top to bottom"
+        },
+        "cx": {
+          "type": "number",
+          "default": 0.5
+        },
+        "cy": {
+          "type": "number",
+          "default": 0.5
+        },
+        "r": {
+          "type": "number",
+          "default": 0.75
+        },
+        "stops": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/stop"
+          },
+          "minItems": 1,
+          "maxItems": 8
+        }
+      },
+      "required": [
+        "stops"
+      ]
+    },
+    "paint": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/color"
+        },
+        {
+          "$ref": "#/$defs/gradient"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "style": {
+      "type": "object",
+      "properties": {
+        "margin": {
+          "type": "number",
+          "minimum": 0,
+          "default": 4,
+          "description": "Quiet zone in modules"
+        },
+        "modules": {
+          "type": "object",
+          "properties": {
+            "shape": {
+              "enum": [
+                "square",
+                "dot",
+                "rounded",
+                "diamond",
+                "star",
+                "fluid",
+                "liquid",
+                "bevel",
+                "classy",
+                "hbars",
+                "vbars"
+              ],
+              "default": "square"
+            },
+            "size": {
+              "type": "number",
+              "minimum": 0.1,
+              "maximum": 1,
+              "default": 1
+            },
+            "roundness": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 1
+            },
+            "color": {
+              "$ref": "#/$defs/paint",
+              "default": "#000000"
+            }
+          }
+        },
+        "eyes": {
+          "type": "object",
+          "properties": {
+            "frame": {
+              "enum": [
+                "square",
+                "rounded",
+                "circle",
+                "leaf",
+                "drop",
+                "bevel",
+                "diamond",
+                "dots"
+              ],
+              "default": "square"
+            },
+            "ball": {
+              "enum": [
+                "square",
+                "rounded",
+                "circle",
+                "leaf",
+                "drop",
+                "bevel",
+                "diamond",
+                "dots"
+              ],
+              "default": "square",
+              "description": "'dots' is drawn as 'circle'"
+            },
+            "frameColor": {
+              "$ref": "#/$defs/paint",
+              "description": "null = modules.color"
+            },
+            "ballColor": {
+              "$ref": "#/$defs/paint",
+              "description": "null = modules.color"
+            }
+          }
+        },
+        "alignment": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "frame": {
+                  "oneOf": [
+                    {
+                      "enum": [
+                        "square",
+                        "rounded",
+                        "circle",
+                        "leaf",
+                        "drop",
+                        "bevel",
+                        "diamond",
+                        "dots"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "ball": {
+                  "oneOf": [
+                    {
+                      "enum": [
+                        "square",
+                        "rounded",
+                        "circle",
+                        "leaf",
+                        "drop",
+                        "bevel",
+                        "diamond",
+                        "dots"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "background": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "$ref": "#/$defs/paint",
+              "default": "#ffffff"
+            },
+            "radius": {
+              "type": "number",
+              "minimum": 0,
+              "default": 0
+            }
+          }
+        },
+        "border": {
+          "type": "object",
+          "properties": {
+            "width": {
+              "type": "number",
+              "minimum": 0,
+              "default": 0
+            },
+            "color": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/color"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": "#000000"
+            }
+          }
+        },
+        "logo": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "href": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Image URL or data: URI (SVG output)"
+                },
+                "size": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "default": 0.2
+                },
+                "margin": {
+                  "type": "number",
+                  "minimum": 0,
+                  "default": 1
+                },
+                "shape": {
+                  "enum": [
+                    "square",
+                    "rounded",
+                    "circle"
+                  ],
+                  "default": "square"
+                },
+                "excavate": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "background": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/$defs/color"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "label": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string"
+                },
+                "font": {
+                  "type": "string",
+                  "default": "sans-serif"
+                },
+                "size": {
+                  "type": "number",
+                  "minimum": 0.1,
+                  "default": 4
+                },
+                "color": {
+                  "$ref": "#/$defs/color",
+                  "default": "#000000"
+                },
+                "position": {
+                  "enum": [
+                    "bottom",
+                    "top"
+                  ],
+                  "default": "bottom"
+                },
+                "bold": {
+                  "type": "boolean",
+                  "default": true
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "encode": {
+      "type": "object",
+      "properties": {
+        "ecc": {
+          "enum": [
+            "L",
+            "M",
+            "Q",
+            "H"
+          ],
+          "description": "Default: H with a logo, else M"
+        },
+        "minVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 40,
+          "default": 1
+        },
+        "maxVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 40,
+          "default": 40
+        },
+        "mask": {
+          "type": "integer",
+          "minimum": -1,
+          "maximum": 7,
+          "default": -1
+        },
+        "boostEcc": {
+          "type": "boolean",
+          "default": true
+        },
+        "eci": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "svg": {
+      "type": "object",
+      "properties": {
+        "width": {
+          "type": "number",
+          "minimum": 0,
+          "default": 0
+        },
+        "idPrefix": {
+          "type": "string",
+          "default": "qrk"
+        }
+      }
+    }
+  }
+}

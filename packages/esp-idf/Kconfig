@@ -1,0 +1,32 @@
+# QRKude - ESP-IDF configuration
+# Copyright 2026 The QRKude Authors
+# SPDX-License-Identifier: Apache-2.0
+
+menu "QRKude (styled QR codes)"
+
+    config QRKUDE_MAX_VERSION
+        int "Largest QR code version"
+        range 1 40
+        default 40
+        help
+            Size of qrk_code: version 40 (177x177 modules) needs 3922 bytes,
+            version 10 (57x57) 412 bytes. The encoder scratch buffer has the
+            same size. Lower it to save RAM when the payloads are short
+            (version 10 holds up to 213 bytes at ECC M).
+
+    config QRKUDE_NO_MALLOC
+        bool "Never allocate memory in the core"
+        default n
+        help
+            qrk_encode() then requires a scratch buffer (a NULL scratch
+            buffer returns QRK_ERR_INVALID_ARGUMENT instead of calling
+            malloc). The LVGL widget still uses the LVGL allocator.
+
+    config QRKUDE_OPTIMIZE_SPEED
+        bool "Compile QRKude with -O2"
+        default y
+        help
+            The rasterizer evaluates the shape model per sample; -O2 makes it
+            noticeably faster than -Os at a cost of a few KB of flash.
+
+endmenu

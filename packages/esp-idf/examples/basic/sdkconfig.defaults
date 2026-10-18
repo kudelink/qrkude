@@ -1,0 +1,7 @@
+# Copyright 2026 The QRKude Authors
+# SPDX-License-Identifier: Apache-2.0
+# app_main runs the JSON parser (~1 KB of stack) and the rasterizer (~2.6 KB)
+# besides logging: the default 3.5 KB main task stack is too tight.
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+# Versions up to 20 (97x97 modules, 666 bytes at ECC M): 1182-byte qrk_code.
+CONFIG_QRKUDE_MAX_VERSION=20

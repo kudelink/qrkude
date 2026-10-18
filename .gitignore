@@ -1,0 +1,17 @@
+build/
+dist/
+node_modules/
+*.o
+*.a
+__pycache__/
+*.egg-info/
+.venv/
+target/
+.dart_tool/
+.pio/
+*.pyc
+.DS_Store
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.vscode/
