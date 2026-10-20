@@ -83,8 +83,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: sudo apt-get install -y libcairo2
-      - run: pip install -e ".[png,test]" zxing-cpp cairosvg
-      - run: pytest
+      - name: Install Python test dependencies
+        run: |
+          # zxing-cpp 3.x requires Python 3.10+, even when built from source.
+          python -m pip install -e ".[png,test]" cairosvg numpy \
+            "zxing-cpp<3; python_version < '3.10'" \
+            "zxing-cpp; python_version >= '3.10'"
+      - run: python -m pytest
 
   rust:
     runs-on: ubuntu-latest

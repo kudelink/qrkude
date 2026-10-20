@@ -658,7 +658,9 @@ From the root of a clone of the QRKude repository:
 cd packages/python
 python3 -m venv .venv
 . .venv/bin/activate
-pip install -e ".[png,test]" zxing-cpp cairosvg
+python -m pip install -e ".[png,test]" cairosvg numpy \
+  "zxing-cpp<3; python_version < '3.10'" \
+  "zxing-cpp; python_version >= '3.10'"
 pytest
 ```
 
