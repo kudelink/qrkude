@@ -7,6 +7,8 @@ description: >-
   every QRKude port. Works on the VM and on the web.
 version: 0.1.0
 # The license is Apache-2.0, see the LICENSE file next to this pubspec.
+homepage: https://qrkude.com
+documentation: https://qrkude.com/docs/dart
 repository: https://github.com/kudelink/qrkude/tree/main/packages/dart
 issue_tracker: https://github.com/kudelink/qrkude/issues
 topics:

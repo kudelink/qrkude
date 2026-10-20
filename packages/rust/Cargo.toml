@@ -11,7 +11,7 @@ authors = ["The QRKude Authors"]
 description = "Styled QR codes: dot/fluid/liquid/bar modules, custom eyes, gradients, logos and labels. no_std encoder, byte-exact SVG writer and streaming rasterizer."
 readme = "README.md"
 repository = "https://github.com/kudelink/qrkude"
-homepage = "https://github.com/kudelink/qrkude/tree/main/packages/rust"
+homepage = "https://qrkude.com"
 keywords = ["qrcode", "qr", "svg", "no-std", "embedded"]
 categories = ["no-std", "embedded", "encoding", "multimedia::images"]
 # tests/vectors.rs and tests/common/ need the repository's spec/vectors: they

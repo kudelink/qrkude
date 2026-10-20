@@ -4,7 +4,7 @@
   "description": "Styled QR codes for the web: dot, fluid, liquid and bar modules, custom eyes, gradients, logos and labels. Byte-identical SVG with every QRKude port.",
   "license": "Apache-2.0",
   "author": "The QRKude Authors",
-  "homepage": "https://github.com/kudelink/qrkude/tree/main/packages/web#readme",
+  "homepage": "https://qrkude.com/docs/web",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kudelink/qrkude.git",

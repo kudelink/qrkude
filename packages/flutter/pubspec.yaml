@@ -10,6 +10,8 @@ version: 0.1.0
 # line when switching to the published package.
 publish_to: none
 # The license is Apache-2.0, see the LICENSE file next to this pubspec.
+homepage: https://qrkude.com
+documentation: https://qrkude.com/docs/flutter
 repository: https://github.com/kudelink/qrkude/tree/main/packages/flutter
 issue_tracker: https://github.com/kudelink/qrkude/issues
 topics:

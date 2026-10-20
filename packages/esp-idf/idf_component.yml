@@ -6,8 +6,9 @@ description: >-
   Styled QR codes for ESP32: dot, fluid, liquid and bar modules, custom eyes,
   gradients, logos and labels. Streams SVG, renders RGB565/RGB888/gray/mono
   pixels or spans, optional LVGL widget. No malloc.
-url: "https://kudelink.com"
+url: "https://qrkude.com"
 repository: "https://github.com/kudelink/qrkude.git"
+documentation: "https://qrkude.com/docs/esp-idf"
 license: "Apache-2.0"
 tags:
   - qrcode

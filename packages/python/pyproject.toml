@@ -35,8 +35,8 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/kudelink/qrkude"
-Documentation = "https://github.com/kudelink/qrkude/tree/main/docs"
+Homepage = "https://qrkude.com"
+Documentation = "https://qrkude.com/docs/python"
 Source = "https://github.com/kudelink/qrkude/tree/main/packages/python"
 Issues = "https://github.com/kudelink/qrkude/issues"
 

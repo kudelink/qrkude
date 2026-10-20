@@ -8,7 +8,8 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SKIP = ("node_modules", ".dart_tool", "/dist/", "/build/", ".pytest_cache", "/target/")
+SKIP = ("node_modules", ".dart_tool", "/dist/", "/build/", ".pytest_cache", "/target/",
+        "/src/content/docs/")  # the website's generated copies of the docs
 
 
 def slug(heading):
@@ -38,7 +39,7 @@ def main():
             continue
         text = re.sub(r"```.*?```", "", open(f, encoding="utf-8").read(), flags=re.S)
         text = re.sub(r"`[^`\n]*`", "", text)  # inline code is not a link
-        for target in re.findall(r"\]\(([^)\s]+)\)", text) + re.findall(r'src="([^"]+)"', text):
+        for target in re.findall(r"\]\(([^)\s]+)\)", text) + re.findall(r'(?:src|srcset)="([^"\s]+)', text):
             if target.startswith(("http://", "https://", "mailto:")):
                 continue
             path, _, anchor = target.partition("#")

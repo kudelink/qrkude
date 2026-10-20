@@ -1,4 +1,9 @@
-# QRKude
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="logo/qrkude-logo-dark.svg">
+    <img src="logo/qrkude-logo.svg" alt="QRKude" width="300">
+  </picture>
+</h1>
 
 **QR codes that look good and still scan, in every language you use.**
 
@@ -8,6 +13,10 @@ and captions. You describe a design once, as a small JSON style document, and
 get exactly the same result in C, Qt, JavaScript, Python, Rust, Dart/Flutter,
 Arduino/ESP32 and LVGL. QRKude also tells you when a design is likely to stop
 scanning.
+
+Try it online at **[qrkude.com](https://qrkude.com)**: a QR code generator, a
+batch generator, a gallery of designs and all the documentation. Everything
+runs in your browser.
 
 <p>
 <img src="docs/images/classic.svg" width="120" alt="Classic square modules">
@@ -62,8 +71,9 @@ you need:
 git clone https://github.com/kudelink/qrkude.git
 ```
 
-The quickest way to see what QRKude can do is the web playground, a single
-HTML page with every option:
+The quickest way to see what QRKude can do is the online generator at
+[qrkude.com](https://qrkude.com). To try it from the repository, build the
+web playground, a single HTML page with every option:
 
 ```sh
 cd packages/web
@@ -280,6 +290,7 @@ core/            C99 reference library, command-line tool, unit tests
 docs/            guide, style reference, specification, images
 spec/            JSON schema, shared test cases, generator and decode checker
 packages/        qt, web, python, rust, dart, flutter, arduino, esp-idf, lvgl
+logo/            the qrkude logo, and how the name and logo may be used
 ```
 
 ## Contributing
@@ -290,5 +301,7 @@ regenerated and every package follows.
 
 ## License
 
-[Apache License 2.0](LICENSE). See [NOTICE](NOTICE).
+[Apache License 2.0](LICENSE). See [NOTICE](NOTICE). The logo is under the
+same license; [logo/README.md](logo/README.md) explains how the name and the
+logo may be used.
 "QR Code" is a registered trademark of DENSO WAVE INCORPORATED.
