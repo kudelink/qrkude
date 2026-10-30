@@ -243,7 +243,7 @@ def _run(a: argparse.Namespace, text: Union[str, bytes]) -> int:
         try:
             from .png import _open_image, to_png
         except ImportError:
-            print("qrkude: PNG output needs Pillow: pip install 'qrkude[png]'", file=sys.stderr)
+            print("qrkude: PNG output needs Pillow 13+ and Python 3.11+: pip install 'qrkude[png]'", file=sys.stderr)
             return 1
         logo_image: Any = None
         if a.logo:

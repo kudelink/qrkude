@@ -365,8 +365,9 @@ typedef enum {
 } qrk_pixel_format;
 
 /* A bitmap supplied by the caller. `pixels` must hold `height` rows of
- * `stride` bytes (or tightly packed rows when stride is 0): the rasterizer
- * trusts these dimensions. */
+ * `stride` bytes (or tightly packed rows when stride is 0). Invalid layouts
+ * are rejected; the caller remains responsible for the actual capacity.
+ * A bitmap with a zero width or height is ignored. */
 typedef struct {
     int width, height;
     qrk_pixel_format format;
@@ -392,8 +393,12 @@ qrk_status qrk_render_spans(const qrk_code *code, const qrk_style *style,
                             const qrk_raster_opts *opts, qrk_span_fn span,
                             void *user);
 
+/* Size of tightly packed pixels; 0 for invalid dimensions/formats or overflow. */
 size_t qrk_pixel_buffer_size(qrk_pixel_format format, int width, int height);
 
+/* `pixels` must hold height * stride bytes (stride 0 means packed rows).
+ * A nonzero stride must fit a full row. Invalid layouts, including size
+ * overflow, return QRK_ERR_INVALID_ARGUMENT before any pixels are written. */
 qrk_status qrk_render_buffer(const qrk_code *code, const qrk_style *style,
                              const qrk_raster_opts *opts, qrk_pixel_format format,
                              void *pixels, size_t stride);

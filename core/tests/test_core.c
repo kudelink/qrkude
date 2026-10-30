@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include <stdio.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -59,6 +60,10 @@ static void test_capacity(void)
     CHECK(version_for(buf, 2953, QRK_ECC_LOW) == 40);
     CHECK(version_for(buf, 2954, QRK_ECC_LOW) == -1);
     CHECK(version_for("", 0, QRK_ECC_MEDIUM) == 1);
+    static char numeric[7090];
+    memset(numeric, '7', sizeof numeric);
+    CHECK(version_for(numeric, 7089, QRK_ECC_LOW) == 40);
+    CHECK(version_for(numeric, sizeof numeric, QRK_ECC_LOW) == -1);
 }
 
 static void test_modes(void)
@@ -180,16 +185,18 @@ static void test_json(void)
     CHECK(qrk_style_from_json(json, strlen(json), &s, &e, &o, arena, sizeof arena) == QRK_OK);
     CHECK(e.ecc == QRK_ECC_QUARTILE && e.min_version == 3 && e.mask == 2 && !e.boost_ecc);
     CHECK(s.margin == 2.5);
-    CHECK(s.modules.shape == QRK_MODULE_LIQUID && s.modules.roundness == 0.8);
+    /* Cast decimal expectations to double: x87 otherwise keeps literals at
+     * extended precision while the parsed fields are stored as doubles. */
+    CHECK(s.modules.shape == QRK_MODULE_LIQUID && s.modules.roundness == (double)0.8);
     CHECK(s.modules.paint.type == QRK_PAINT_RADIAL && s.modules.paint.stop_count == 2);
-    CHECK(s.modules.paint.r == 0.6 && s.modules.paint.stops[1].color == 0x0000FF80);
+    CHECK(s.modules.paint.r == (double)0.6 && s.modules.paint.stops[1].color == 0x0000FF80);
     CHECK(s.eyes.frame == QRK_EYE_LEAF && s.eyes.ball == QRK_EYE_CIRCLE);
     CHECK(s.eyes.frame_paint.type == QRK_PAINT_SOLID && s.eyes.frame_paint.color == 0x123456FF);
     CHECK(s.eyes.ball_paint.type == QRK_PAINT_NONE);
     CHECK(s.alignment.frame == QRK_EYE_CIRCLE && s.alignment.ball == QRK_EYE_DOTS);
     CHECK(s.background.paint.type == QRK_PAINT_NONE && s.background.radius == 3);
     CHECK(s.border.width == 1 && s.border.color == 0x00FF00FF);
-    CHECK(s.logo.size == 0.2 && s.logo.shape == QRK_LOGO_CIRCLE && s.logo.background == 0xFFFFFFFF);
+    CHECK(s.logo.size == (double)0.2 && s.logo.shape == QRK_LOGO_CIRCLE && s.logo.background == 0xFFFFFFFF);
     CHECK_STR(s.logo.href, "data:image/png;base64,AAA\xc3\xa9");
     CHECK_STR(s.label.text, "SCAN \"ME\"");
     CHECK(s.label.position == QRK_LABEL_TOP && !s.label.bold);
@@ -204,7 +211,7 @@ static void test_json(void)
     /* nearest double for long inputs */
     const char *lm = "{\"margin\":3.6672146059500514,\"border\":{\"width\":1e-30}}";
     CHECK(qrk_style_from_json(lm, strlen(lm), &s, NULL, NULL, NULL, 0) == QRK_OK);
-    CHECK(s.margin == 3.6672146059500514 && s.border.width == 1e-30);
+    CHECK(s.margin == (double)3.6672146059500514 && s.border.width == (double)1e-30);
     /* arena exhaustion is reported as such */
     const char *lbl = "{\"label\":{\"text\":\"a label that does not fit\"}}";
     char tiny[8];
@@ -254,6 +261,77 @@ static void test_svg(void)
     CHECK(big_damage > 0.8);
 }
 
+static void count_span(void *user, int x, int y, int len, qrk_color color)
+{
+    (void)x; (void)y; (void)len; (void)color;
+    (*(int *)user)++;
+}
+
+static void test_raster_bounds(void)
+{
+    qrk_style s;
+    qrk_style_default(&s);
+    CHECK(qrk_encode_text(&code, "bounds", NULL, NULL) == QRK_OK);
+    qrk_raster_opts o;
+    qrk_raster_opts_default(&o, 9, 2);
+    o.supersample = 1;
+    for (int f = QRK_PIXEL_RGBA8888; f <= QRK_PIXEL_MONO; f++) {
+        qrk_pixel_format format = (qrk_pixel_format)f;
+        size_t row = qrk_pixel_buffer_size(format, o.width, 1);
+        size_t stride = row + 3;
+        uint8_t packed[72], padded[80], untouched[80];
+        memset(packed, 0xA5, sizeof packed);
+        memset(padded, 0xA5, sizeof padded);
+        memcpy(untouched, padded, sizeof padded);
+        /* Invalid stride must be rejected before even the first row is written. */
+        CHECK(qrk_render_buffer(&code, &s, &o, format, padded, row - 1) == QRK_ERR_INVALID_ARGUMENT);
+        CHECK(memcmp(padded, untouched, sizeof padded) == 0);
+        CHECK(qrk_render_buffer(&code, &s, &o, format, padded, SIZE_MAX) == QRK_ERR_INVALID_ARGUMENT);
+        CHECK(memcmp(padded, untouched, sizeof padded) == 0);
+        CHECK(qrk_render_buffer(&code, &s, &o, format, packed, 0) == QRK_OK);
+        CHECK(qrk_render_buffer(&code, &s, &o, format, padded, stride) == QRK_OK);
+        CHECK(memcmp(packed, padded, row) == 0);
+        CHECK(memcmp(packed + row, padded + stride, row) == 0);
+        CHECK(memcmp(padded + row, untouched + row, stride - row) == 0);
+        CHECK(memcmp(padded + stride + row, untouched + stride + row,
+                     sizeof padded - stride - row) == 0);
+        CHECK(qrk_pixel_buffer_size(format, -1, 2) == 0);
+        CHECK(qrk_pixel_buffer_size(format, 9, 0) == 0);
+        CHECK(qrk_pixel_buffer_size(format, 9, -1) == 0);
+    }
+    CHECK(qrk_pixel_buffer_size(QRK_PIXEL_MONO, INT_MAX, 1) == (size_t)INT_MAX / 8 + 1);
+    if ((size_t)INT_MAX > SIZE_MAX / 4)
+        CHECK(qrk_pixel_buffer_size(QRK_PIXEL_RGBA8888, INT_MAX, 1) == 0);
+    if ((size_t)INT_MAX > SIZE_MAX / (size_t)INT_MAX)
+        CHECK(qrk_pixel_buffer_size(QRK_PIXEL_GRAY8, INT_MAX, INT_MAX) == 0);
+    uint8_t pixels[80], untouched[80];
+    memset(pixels, 0xA5, sizeof pixels);
+    memcpy(untouched, pixels, sizeof pixels);
+    CHECK(qrk_pixel_buffer_size((qrk_pixel_format)-1, 9, 2) == 0);
+    CHECK(qrk_render_buffer(&code, &s, &o, (qrk_pixel_format)-1, pixels, 0) == QRK_ERR_INVALID_ARGUMENT);
+    CHECK(qrk_render_buffer(&code, &s, &o, (qrk_pixel_format)(QRK_PIXEL_MONO + 1), pixels, 0) == QRK_ERR_INVALID_ARGUMENT);
+    CHECK(memcmp(pixels, untouched, sizeof pixels) == 0);
+
+    /* Logo metadata is checked even for the streaming API, before callbacks. */
+    qrk_image logo = {9, 2, QRK_PIXEL_RGBA8888, pixels, 1};
+    o.logo = &logo;
+    s.logo.size = 0.2;
+    int spans = 0;
+    CHECK(qrk_render_spans(&code, &s, &o, count_span, &spans) == QRK_ERR_INVALID_ARGUMENT);
+    CHECK(spans == 0);
+    logo.stride = SIZE_MAX;
+    CHECK(qrk_render_buffer(&code, &s, &o, QRK_PIXEL_RGBA8888, pixels, 0) == QRK_ERR_INVALID_ARGUMENT);
+    CHECK(memcmp(pixels, untouched, sizeof pixels) == 0);
+    logo.stride = 0;
+    logo.pixels = NULL;
+    CHECK(qrk_render_spans(&code, &s, &o, count_span, &spans) == QRK_ERR_INVALID_ARGUMENT);
+    logo.width = -1;
+    CHECK(qrk_render_spans(&code, &s, &o, count_span, &spans) == QRK_ERR_INVALID_ARGUMENT);
+    logo.width = 0; /* explicitly empty bitmaps are ignored */
+    CHECK(qrk_render_spans(&code, &s, &o, count_span, &spans) == QRK_OK);
+    CHECK(spans > 0);
+}
+
 static void test_hardening(void)
 {
     /* id prefix cannot carry markup */
@@ -279,6 +357,13 @@ static void test_hardening(void)
     s.modules.paint = qrk_paint_solid(QRK_RGBA(0, 0, 0, 128));
     s.background.paint = qrk_paint_solid(QRK_HEX(0x000000));
     CHECK(qrk_lint(&code, &s) & QRK_LINT_LOW_CONTRAST);
+
+    qrk_style_default(&s);
+    s.modules.shape = QRK_MODULE_DOT;
+    s.modules.size = 0.6;
+    CHECK(!(qrk_lint(&code, &s) & QRK_LINT_SMALL_MODULES));
+    s.modules.size = 0.59;
+    CHECK(qrk_lint(&code, &s) & QRK_LINT_SMALL_MODULES);
 
     /* NaN / huge lengths are clamped, numbers stay finite */
     qrk_style_default(&s);
@@ -327,6 +412,7 @@ static void test_hardening(void)
 
 int main(void)
 {
+    test_raster_bounds();
     test_hardening();
     test_capacity();
     test_modes();

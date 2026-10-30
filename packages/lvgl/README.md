@@ -160,7 +160,11 @@ core:
   `LV_COLOR_16_SWAP` work.
 
 `lv_qrkude_set_size(qr, px)` sets the side of the square widget. The code is
-scaled to fit and centered. Other options:
+scaled to fit and centered. The maximum side is 2047 pixels on LVGL 8 and
+65535 on LVGL 9. Invalid sizes and allocation failures preserve the previous
+size and image. Growing a buffer temporarily needs memory for both the old
+and new images, so that a failed allocation never leaves the canvas pointing
+at freed pixels. Other options:
 
 - `lv_qrkude_set_antialias(qr, supersample, integer_scale)`: smoothing, 1
   (off) to 4 samples per pixel and axis, default 2; and whether every module

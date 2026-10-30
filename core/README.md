@@ -309,6 +309,12 @@ each warning and how to fix it.
 Encoding options out of range (for example `minVersion` 0) make
 `qrk_encode()` return `QRK_ERR_INVALID_ARGUMENT`.
 
+Raster buffer layouts and logo metadata are checked before drawing. Invalid
+formats, dimensions, strides smaller than a packed row, and overflowing
+sizes return `QRK_ERR_INVALID_ARGUMENT`. `qrk_pixel_buffer_size()` returns 0
+for invalid or overflowing sizes. The caller must still provide enough
+memory for the declared dimensions and stride; C pointers carry no capacity.
+
 ## API reference
 
 All declarations are in [`include/qrkude.h`](include/qrkude.h).

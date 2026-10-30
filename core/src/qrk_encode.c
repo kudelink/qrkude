@@ -244,7 +244,8 @@ static long total_bits(int mode, size_t len, bool eci, int ver)
     long bits = eci ? 12 : 0;
     if (len > 0) {
         int ccb = char_count_bits(mode, ver);
-        if (len >= ((size_t)1 << ccb))
+        /* AVR has 16-bit size_t, but byte-mode counts can have 16 bits. */
+        if (len >= (UINT32_C(1) << ccb))
             return -1;
         bits += 4 + ccb + payload_bits(mode, len);
     }
@@ -617,6 +618,10 @@ qrk_status qrk_encode(qrk_code *out, const void *data, size_t len,
         return QRK_ERR_INVALID_ARGUMENT;
     if (o.ecc == QRK_ECC_AUTO)
         o.ecc = QRK_ECC_MEDIUM;
+    /* Even version 40-L in numeric mode cannot hold more characters.
+     * Reject before scanning the payload or allocating scratch memory. */
+    if (len > 7089)
+        return QRK_ERR_DATA_TOO_LONG;
 
     if (tmp)
         return encode_with(out, (const uint8_t *)data, len, &o, tmp);

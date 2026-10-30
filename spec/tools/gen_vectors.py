@@ -6,6 +6,7 @@ implementation. Every port must reproduce these outputs byte for byte.
 
     make -C core && python3 spec/tools/gen_vectors.py
 """
+import argparse
 import json
 import os
 import subprocess
@@ -349,4 +350,10 @@ def main():
 
 
 if __name__ == "__main__":
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--cli", default=CLI, help="reference QR CLI executable")
+    ap.add_argument("--payload-cli", default=PAYLOAD_CLI, help="payload CLI executable")
+    ap.add_argument("--out", default=OUT, help="output directory")
+    args = ap.parse_args()
+    CLI, PAYLOAD_CLI, OUT = args.cli, args.payload_cli, args.out
     main()

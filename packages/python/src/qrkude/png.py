@@ -38,6 +38,8 @@ MAX_PIXELS = 1 << 26
 MAX_SAMPLES = 1 << 26
 #: Logos with more pixels are refused before decoding.
 MAX_LOGO_PIXELS = 1 << 24
+# Allow only raster decoders: MIME labels do not identify the actual bytes.
+_LOGO_FORMATS = ("PNG", "JPEG", "GIF", "WEBP", "BMP", "TIFF", "ICO")
 _GRADIENT_SIDE = 1024
 _MAX_FONT_PX = 1024.0
 _RESAMPLE: Any = getattr(Image, "Resampling", Image)
@@ -268,13 +270,19 @@ def _gradient_image(p: Paint, geom: Any, w: int, h: int, scale: float, offx: flo
 # ---- logo and label ----------------------------------------------------------------------
 
 
-def _open_image(source: Any) -> "Image.Image":
-    """Opens and decodes an image, refusing absurd dimensions before decoding."""
-    img = Image.open(source)
+def _decode_logo(img: "Image.Image") -> "Image.Image":
+    """Validate lazy images too, before allowing their decoder to run."""
+    if img.format is not None and img.format not in _LOGO_FORMATS:
+        raise InvalidArgumentError("unsupported logo format: %s" % img.format)
     if img.width <= 0 or img.height <= 0 or img.width * img.height > MAX_LOGO_PIXELS:
         raise InvalidArgumentError("logo image too large (%dx%d)" % (img.width, img.height))
     img.load()
     return img
+
+
+def _open_image(source: Any) -> "Image.Image":
+    """Opens a raster image, refusing other decoders and absurd dimensions."""
+    return _decode_logo(Image.open(source, formats=_LOGO_FORMATS))
 
 
 def _load_logo(logo: LogoSource, href: Optional[str]) -> Optional["Image.Image"]:
@@ -282,7 +290,7 @@ def _load_logo(logo: LogoSource, href: Optional[str]) -> Optional["Image.Image"]
     InvalidArgumentError), else a raster ``data:`` URI in ``href`` (ignored when it
     cannot be decoded, since styles may come from untrusted sources)."""
     if isinstance(logo, Image.Image):
-        return logo
+        return _decode_logo(logo)
     if logo is not None:
         try:
             if isinstance(logo, (bytes, bytearray)):

@@ -121,7 +121,9 @@ uint32_t qrk_lint(const qrk_code *code, const qrk_style *style)
     switch (L.shape) {
     case QRK_MODULE_SQUARE: case QRK_MODULE_DOT: case QRK_MODULE_ROUNDED:
     case QRK_MODULE_DIAMOND: case QRK_MODULE_STAR: case QRK_MODULE_HBARS: case QRK_MODULE_VBARS:
-        if (L.size < 0.6)
+        /* Round the threshold to double too (x87 may evaluate literals in
+         * extended precision, incorrectly warning at exactly 0.6). */
+        if (L.size < (double)0.6)
             w |= QRK_LINT_SMALL_MODULES;
         break;
     default:

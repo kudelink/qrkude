@@ -45,6 +45,39 @@ typedef struct {
     cell_cache cache;
 } raster_ctx;
 
+/* Validate the whole layout before rendering or doing pointer arithmetic. */
+static bool buffer_layout(qrk_pixel_format format, int width, int height, size_t stride,
+                           size_t *row_stride, size_t *total)
+{
+    if (width <= 0 || height <= 0)
+        return false;
+    size_t w = (size_t)width, row, bpp;
+    switch (format) {
+    case QRK_PIXEL_RGBA8888:
+    case QRK_PIXEL_BGRA8888: bpp = 4; break;
+    case QRK_PIXEL_RGB888: bpp = 3; break;
+    case QRK_PIXEL_RGB565:
+    case QRK_PIXEL_RGB565_SWAPPED: bpp = 2; break;
+    case QRK_PIXEL_GRAY8: bpp = 1; break;
+    case QRK_PIXEL_MONO: bpp = 0; break;
+    default: return false;
+    }
+    if (bpp == 0) {
+        row = w / 8 + (w % 8 != 0);
+    } else {
+        if (w > SIZE_MAX / bpp)
+            return false;
+        row = w * bpp;
+    }
+    if (stride == 0)
+        stride = row;
+    if (stride < row || (size_t)height > SIZE_MAX / stride)
+        return false;
+    *row_stride = stride;
+    *total = stride * (size_t)height;
+    return true;
+}
+
 static void to_fcrect(const qrk__crect *c, fcrect *f)
 {
     f->x0 = (float)c->x0;
@@ -150,21 +183,21 @@ static qrk_color paint_at(const raster_ctx *R, int layer, float u, float v)
 
 static qrk_color fetch_pixel(const qrk_image *img, int x, int y)
 {
-    size_t stride = img->stride;
-    const uint8_t *row;
+    size_t stride = img->stride ? img->stride : qrk_pixel_buffer_size(img->format, img->width, 1);
+    const uint8_t *row = (const uint8_t *)img->pixels + (size_t)y * stride;
     switch (img->format) {
     case QRK_PIXEL_RGBA8888:
-        row = (const uint8_t *)img->pixels + y * (stride ? stride : (size_t)img->width * 4) + x * 4;
+        row += (size_t)x * 4;
         return QRK_RGBA(row[0], row[1], row[2], row[3]);
     case QRK_PIXEL_BGRA8888:
-        row = (const uint8_t *)img->pixels + y * (stride ? stride : (size_t)img->width * 4) + x * 4;
+        row += (size_t)x * 4;
         return QRK_RGBA(row[2], row[1], row[0], row[3]);
     case QRK_PIXEL_RGB888:
-        row = (const uint8_t *)img->pixels + y * (stride ? stride : (size_t)img->width * 3) + x * 3;
+        row += (size_t)x * 3;
         return QRK_RGB(row[0], row[1], row[2]);
     case QRK_PIXEL_RGB565:
     case QRK_PIXEL_RGB565_SWAPPED: {
-        row = (const uint8_t *)img->pixels + y * (stride ? stride : (size_t)img->width * 2) + x * 2;
+        row += (size_t)x * 2;
         uint16_t v;
         memcpy(&v, row, 2);
         if (img->format == QRK_PIXEL_RGB565_SWAPPED)
@@ -173,10 +206,10 @@ static qrk_color fetch_pixel(const qrk_image *img, int x, int y)
         return QRK_RGB(r * 255 / 31, g * 255 / 63, b * 255 / 31);
     }
     case QRK_PIXEL_GRAY8:
-        row = (const uint8_t *)img->pixels + y * (stride ? stride : (size_t)img->width) + x;
+        row += (size_t)x;
         return QRK_RGB(row[0], row[0], row[0]);
     case QRK_PIXEL_MONO: {
-        row = (const uint8_t *)img->pixels + y * (stride ? stride : (size_t)(img->width + 7) / 8) + x / 8;
+        row += (size_t)x / 8;
         bool dark = (row[0] >> (7 - x % 8)) & 1;
         return dark ? QRK_HEX(0x000000) : QRK_HEX(0xFFFFFF);
     }
@@ -441,6 +474,15 @@ qrk_status qrk_render_spans(const qrk_code *code, const qrk_style *style,
 {
     if (!code || !style || !opts || !span || opts->width <= 0 || opts->height <= 0)
         return QRK_ERR_INVALID_ARGUMENT;
+    if (opts->logo) {
+        const qrk_image *img = opts->logo;
+        size_t stride, total;
+        if (img->width < 0 || img->height < 0 ||
+            (img->width > 0 && img->height > 0 &&
+             (!img->pixels || !buffer_layout(img->format, img->width, img->height,
+                                             img->stride, &stride, &total))))
+            return QRK_ERR_INVALID_ARGUMENT;
+    }
     raster_ctx R;
     ctx_init(&R, code, style, opts->logo);
 
@@ -502,16 +544,8 @@ qrk_status qrk_render_spans(const qrk_code *code, const qrk_style *style,
 
 size_t qrk_pixel_buffer_size(qrk_pixel_format format, int width, int height)
 {
-    switch (format) {
-    case QRK_PIXEL_RGBA8888:
-    case QRK_PIXEL_BGRA8888: return (size_t)width * height * 4;
-    case QRK_PIXEL_RGB888: return (size_t)width * height * 3;
-    case QRK_PIXEL_RGB565:
-    case QRK_PIXEL_RGB565_SWAPPED: return (size_t)width * height * 2;
-    case QRK_PIXEL_GRAY8: return (size_t)width * height;
-    case QRK_PIXEL_MONO: return (size_t)(width + 7) / 8 * height;
-    }
-    return 0;
+    size_t stride, total;
+    return buffer_layout(format, width, height, 0, &stride, &total) ? total : 0;
 }
 
 typedef struct {
@@ -530,19 +564,20 @@ static void buffer_span(void *user, int x, int y, int len, qrk_color c)
         v565 = (uint16_t)((v565 >> 8) | (v565 << 8));
     uint8_t gray = (uint8_t)((r * 299 + g * 587 + b * 114 + 500) / 1000);
     for (int i = x; i < x + len; i++) {
+        size_t p = (size_t)i;
         switch (t->format) {
         case QRK_PIXEL_RGBA8888:
-            row[i * 4] = r; row[i * 4 + 1] = g; row[i * 4 + 2] = b; row[i * 4 + 3] = a;
+            row[p * 4] = r; row[p * 4 + 1] = g; row[p * 4 + 2] = b; row[p * 4 + 3] = a;
             break;
         case QRK_PIXEL_BGRA8888:
-            row[i * 4] = b; row[i * 4 + 1] = g; row[i * 4 + 2] = r; row[i * 4 + 3] = a;
+            row[p * 4] = b; row[p * 4 + 1] = g; row[p * 4 + 2] = r; row[p * 4 + 3] = a;
             break;
         case QRK_PIXEL_RGB888:
-            row[i * 3] = r; row[i * 3 + 1] = g; row[i * 3 + 2] = b;
+            row[p * 3] = r; row[p * 3 + 1] = g; row[p * 3 + 2] = b;
             break;
         case QRK_PIXEL_RGB565:
         case QRK_PIXEL_RGB565_SWAPPED:
-            memcpy(row + i * 2, &v565, 2);
+            memcpy(row + p * 2, &v565, 2);
             break;
         case QRK_PIXEL_GRAY8:
             row[i] = gray;
@@ -566,6 +601,8 @@ qrk_status qrk_render_buffer(const qrk_code *code, const qrk_style *style,
     buffer_target t;
     t.pixels = (uint8_t *)pixels;
     t.format = format;
-    t.stride = stride ? stride : qrk_pixel_buffer_size(format, opts->width, 1);
+    size_t total;
+    if (!buffer_layout(format, opts->width, opts->height, stride, &t.stride, &total))
+        return QRK_ERR_INVALID_ARGUMENT;
     return qrk_render_spans(code, style, opts, buffer_span, &t);
 }

@@ -79,6 +79,9 @@ part of every change:
 | decode check | `python3 spec/tools/check_decode.py` |
 | others | see each package README |
 
+For C on 32-bit Linux, Qt and embedded tests in a container, see
+[validation containers](tools/validation/README.md).
+
 ## Code style
 
 - Match the surrounding code. C: C99, 4 spaces, no allocation in the core.

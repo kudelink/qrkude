@@ -41,11 +41,12 @@ pip install "qrkude[png]"   # adds PNG output through Pillow
 | Extra | Installs | Needed for |
 |---|---|---|
 | (none) | nothing | encoding, SVG, lint, payload helpers, CLI with SVG output |
-| `png` | Pillow 9 or newer | `to_png`, `to_image`, `qrkude ... -o file.png` |
-| `test` | pytest, Pillow | running the test suite |
+| `png` | Pillow 13 or newer (Python 3.11+) | `to_png`, `to_image`, `qrkude ... -o file.png` |
+| `test` | pytest; Pillow 13 on Python 3.11+ | running the test suite |
 
-Python 3.9 or newer is required. The package is pure Python and has no
-runtime dependencies.
+Python 3.9 or newer is required for encoding and SVG, with no runtime
+dependencies. PNG output requires Python 3.11 or newer and Pillow 13 or newer,
+which includes security fixes for image decoding.
 
 ## Quick start
 
@@ -227,7 +228,8 @@ print(image.size)   # -> (600, 697)
   average, and it decodes identically.
 - The logo is fitted into its box and keeps its aspect ratio. `logo` may be a
   `PIL.Image`, a file path or image bytes. Without it, a raster `data:` URI in
-  `style.logo.href` is used. PNG output cannot load `http` URLs or SVG logos.
+  `style.logo.href` is used. Supported logo formats are PNG, JPEG, GIF, WebP,
+  BMP, TIFF and ICO. PNG output cannot load `http` URLs, SVG or EPS logos.
 - The caption uses a TrueType font found on the system (DejaVu, Noto,
   Liberation, Arial...). Without one it falls back to Pillow's built-in font.
 
@@ -359,7 +361,9 @@ them is safe:
   objects merge; later values win.
 - **PNG limits.** At most 16384 pixels per side and 2^26 pixels in all. Logos
   above 2^24 pixels are refused before decoding. A `data:` URI logo that
-  cannot be decoded is skipped.
+  cannot be decoded is skipped. Only the supported raster decoders are
+  allowed, regardless of a file's extension or a `data:` URI's MIME label;
+  logos never invoke the EPS/Ghostscript interpreter.
 
 Errors caused by the input (the text, the options or the style) are raised
 as `QRKudeError` (a subclass of `ValueError`) with a `kind` attribute. The
@@ -658,9 +662,10 @@ From the root of a clone of the QRKude repository:
 cd packages/python
 python3 -m venv .venv
 . .venv/bin/activate
-python -m pip install -e ".[png,test]" cairosvg numpy \
-  "zxing-cpp<3; python_version < '3.10'" \
-  "zxing-cpp; python_version >= '3.10'"
+python -m pip install -e ".[test]" \
+  "cairosvg; python_version >= '3.11'" \
+  "numpy; python_version >= '3.11'" \
+  "zxing-cpp; python_version >= '3.11'"
 pytest
 ```
 

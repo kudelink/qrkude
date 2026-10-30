@@ -238,6 +238,23 @@ int main(int argc, char ** argv)
     snapshot("lv_dots_small", "WIFI:T:WPA;S:lvgl;P:secret;;");
     OBJ_SHOW(qr);
 
+    /* A 1600px buffer exceeds the test allocator's 2 MiB in every format.
+     * A failed resize must leave a live, correctly sized canvas and allow
+     * both drawing and subsequent refreshes without dangling pointers. */
+    lv_obj_update_layout(qr);
+    int32_t previous_size = lv_obj_get_width(qr);
+    OBJ_HIDE(qr2);
+    lv_qrkude_set_size(qr, 1600);
+    lv_obj_update_layout(qr);
+    CHECK(lv_obj_get_width(qr) == previous_size);
+    snapshot("lv_after_resize_oom", "https://lvgl.io");
+    CHECK(lv_qrkude_refresh(qr) == QRK_OK);
+    /* Reject dimensions that cannot be represented by the canvas header. */
+    lv_qrkude_set_size(qr, INT32_MAX);
+    lv_obj_update_layout(qr);
+    CHECK(lv_obj_get_width(qr) == previous_size);
+    CHECK(lv_qrkude_refresh(qr) == QRK_OK);
+
     /* 7. delete frees everything */
     OBJ_DELETE(qr2);
     OBJ_DELETE(qr);

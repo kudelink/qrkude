@@ -41,8 +41,8 @@ Source = "https://github.com/kudelink/qrkude/tree/main/packages/python"
 Issues = "https://github.com/kudelink/qrkude/issues"
 
 [project.optional-dependencies]
-png = ["Pillow>=9"]
-test = ["pytest>=7", "Pillow>=9"]
+png = ["Pillow>=13.0.0"]
+test = ["pytest>=7", "Pillow>=13.0.0; python_version >= '3.11'"]
 
 [project.scripts]
 qrkude = "qrkude.cli:main"

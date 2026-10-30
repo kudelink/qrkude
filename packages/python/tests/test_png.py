@@ -271,6 +271,46 @@ def test_untrusted_logo_href_is_ignored_when_invalid() -> None:
         assert qrkude.to_image(code, style, 64).size == (64, 64)
 
 
+def test_eps_logo_is_rejected_before_loading(tmp_path: Any, monkeypatch: Any) -> None:
+    from PIL import EpsImagePlugin
+
+    eps = (b"%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: 0 0 1 1\n"
+           b"%%EndComments\nshowpage\n%%EOF\n")
+    calls = []
+
+    def forbidden_interpreter(*args: Any, **kwargs: Any) -> None:
+        calls.append(True)
+        raise AssertionError("untrusted logo reached Ghostscript")
+
+    monkeypatch.setattr(EpsImagePlugin, "Ghostscript", forbidden_interpreter)
+    code = qrkude.encode("logo", ecc="H")
+    path = tmp_path / "logo.png"  # both the name and the MIME label are misleading
+    path.write_bytes(eps)
+    for source in (eps, path):
+        with pytest.raises(qrkude.InvalidArgumentError, match="cannot read logo"):
+            qrkude.to_image(code, qrkude.Style.from_json({"logo": {}}), 32, source)
+    with Image.open(io.BytesIO(eps)) as lazy:
+        with pytest.raises(qrkude.InvalidArgumentError, match="unsupported logo format"):
+            qrkude.to_image(code, qrkude.Style.from_json({"logo": {}}), 32, lazy)
+    plain = qrkude.Style.from_json({"logo": {}})
+    href = "data:image/png;base64," + base64.b64encode(eps).decode("ascii")
+    untrusted = qrkude.Style.from_json({"logo": {"href": href}})
+    assert qrkude.to_image(code, untrusted, 32).tobytes() == qrkude.to_image(code, plain, 32).tobytes()
+    assert calls == []
+
+
+@pytest.mark.parametrize("fmt", ["PNG", "JPEG", "GIF", "WEBP", "BMP", "TIFF", "ICO"])
+def test_supported_raster_logo_formats(fmt: str) -> None:
+    image = Image.new("RGB", (16, 16), (230, 57, 70))
+    buf = io.BytesIO()
+    image.save(buf, format=fmt)
+    code = qrkude.encode("logo", ecc="H")
+    style = qrkude.Style.from_json({"logo": {"size": 0.4}})
+    rendered = qrkude.to_image(code, style, 64, buf.getvalue())
+    r, g, b, a = rendered.getpixel((32, 32))
+    assert r > 200 and g < 90 and b < 100 and a == 255
+
+
 @pytest.mark.parametrize("size", [0, -5, 16385, 10 ** 9])
 def test_image_size_limits(size: int) -> None:
     with pytest.raises(qrkude.QRKudeError, match="out of range"):

@@ -149,28 +149,40 @@ static void qk_v8_span(void * user, int x, int y, int len, qrk_color c)
 static qrk_status qk_render(lv_obj_t * obj, qk_state_t * s)
 {
     int32_t size = s->size;
-    lv_obj_set_size(obj, size, size);
-    if(!s->valid) return QRK_OK;
+    /* Canvas image headers have 16-bit dimensions in v9, 11-bit in v8. */
+#if LVGL_VERSION_MAJOR >= 9
+    if(size <= 0 || size > UINT16_MAX) return QRK_ERR_INVALID_ARGUMENT;
+#else
+    if(size <= 0 || size > 2047) return QRK_ERR_INVALID_ARGUMENT;
+#endif
+    if(!s->valid) {
+        lv_obj_set_size(obj, size, size);
+        return QRK_OK;
+    }
 
 #if LVGL_VERSION_MAJOR >= 9
     qrk_pixel_format pf;
     lv_color_format_t cf = qk_color_format(obj, &pf);
     uint32_t stride = lv_draw_buf_width_to_stride((uint32_t)size, cf);
+    size_t row = qrk_pixel_buffer_size(pf, (int)size, 1);
+    if(row == 0 || stride < row ||
+       (size_t)stride > (SIZE_MAX - LV_DRAW_BUF_ALIGN) / (size_t)size)
+        return QRK_ERR_INVALID_ARGUMENT;
     size_t need = (size_t)stride * (size_t)size + LV_DRAW_BUF_ALIGN;
 #else
+    if((size_t)size > SIZE_MAX / sizeof(lv_color_t) ||
+       (size_t)size > SIZE_MAX / ((size_t)size * sizeof(lv_color_t)))
+        return QRK_ERR_INVALID_ARGUMENT;
     size_t need = (size_t)size * (size_t)size * sizeof(lv_color_t);
 #endif
-    if(s->buf_size < need) {
-        /* The canvas still points at the old buffer: nothing draws before
-         * lv_canvas_set_buffer() below, LVGL being single threaded. */
-        LV_QRKUDE_FREE(s->buf);
-        s->buf_size = 0;
-        s->buf = LV_QRKUDE_MALLOC(need);
-        if(s->buf == NULL) {
+    bool replace = s->buf_size < need;
+    void * buf = s->buf;
+    if(replace) {
+        buf = LV_QRKUDE_MALLOC(need);
+        if(buf == NULL) {
             LV_LOG_WARN("lv_qrkude: out of memory for a %d px buffer", (int)size);
             return QRK_ERR_OUT_OF_MEMORY;
         }
-        s->buf_size = need;
     }
 
     qrk_raster_opts ro;
@@ -183,16 +195,30 @@ static qrk_status qk_render(lv_obj_t * obj, qk_state_t * s)
     qrk_status st;
 #if LVGL_VERSION_MAJOR >= 9
     /* lv_canvas_set_buffer() aligns the pointer the same way. */
-    void * px = lv_draw_buf_align(s->buf, cf);
+    void * px = lv_draw_buf_align(buf, cf);
     st = qrk_render_buffer(s->code, &s->style, &ro, pf, px, stride);
-    if(st == QRK_OK) lv_canvas_set_buffer(obj, s->buf, size, size, cf);
 #else
     qk_v8_target_t t;
-    t.px = (lv_color_t *)s->buf;
+    t.px = (lv_color_t *)buf;
     t.w = size;
     st = qrk_render_spans(s->code, &s->style, &ro, qk_v8_span, &t);
-    if(st == QRK_OK) lv_canvas_set_buffer(obj, s->buf, (lv_coord_t)size, (lv_coord_t)size, LV_IMG_CF_TRUE_COLOR);
 #endif
+    if(st != QRK_OK) {
+        if(replace) LV_QRKUDE_FREE(buf);
+        return st;
+    }
+    /* Retire the old buffer only after the canvas has stopped using it. */
+#if LVGL_VERSION_MAJOR >= 9
+    lv_canvas_set_buffer(obj, buf, size, size, cf);
+#else
+    lv_canvas_set_buffer(obj, buf, (lv_coord_t)size, (lv_coord_t)size, LV_IMG_CF_TRUE_COLOR);
+#endif
+    if(replace) {
+        LV_QRKUDE_FREE(s->buf);
+        s->buf = buf;
+        s->buf_size = need;
+    }
+    lv_obj_set_size(obj, size, size);
     lv_obj_invalidate(obj);
     return st;
 }
@@ -260,8 +286,9 @@ void lv_qrkude_set_size(lv_obj_t * obj, int32_t size)
 {
     qk_state_t * s = qk_get(obj);
     if(s == NULL || size <= 0) return;
+    int32_t previous = s->size;
     s->size = size;
-    qk_render(obj, s);
+    if(qk_render(obj, s) != QRK_OK) s->size = previous;
 }
 
 void lv_qrkude_set_style(lv_obj_t * obj, const qrk_style * style)

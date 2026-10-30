@@ -145,7 +145,7 @@ def _require_pillow() -> None:
     try:
         import PIL  # noqa: F401
     except ImportError as exc:  # pragma: no cover - depends on the environment
-        raise ImportError("PNG output needs Pillow: pip install 'qrkude[png]'") from exc
+        raise ImportError("PNG output needs Pillow 13+ and Python 3.11+: pip install 'qrkude[png]'") from exc
 
 
 def to_image(code: QRCode, style: Optional[Style] = None, size: int = 512,

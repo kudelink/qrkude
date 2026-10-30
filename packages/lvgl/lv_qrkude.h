@@ -85,7 +85,8 @@ lv_obj_t * lv_qrkude_create(lv_obj_t * parent);
 
 /* Side length in pixels (the widget is square). The code is scaled to fit
  * and centered; with the default pixel snapping some border may remain.
- * Re-renders when a code is set. */
+ * Re-renders when a code is set. Invalid sizes and allocation failures keep
+ * the previous size and image. Maximum size: 2047 on LVGL 8, 65535 on LVGL 9. */
 void lv_qrkude_set_size(lv_obj_t * obj, int32_t size);
 
 /* Copies a style (qrk_style in qrkude.h, docs/STYLES.md). Strings it points

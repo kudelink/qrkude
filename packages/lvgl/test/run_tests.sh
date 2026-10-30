@@ -15,8 +15,9 @@ ENVS=$(sed -n 's/^\[env:\(.*\)\]$/\1/p' "$HERE/platformio.ini")
 status=0
 for env in $ENVS; do
     echo "=== $env"
-    if ! pio run -d "$HERE" -e "$env" > "$OUT.$env.log" 2>&1; then
+    if ! pio run -j "${QRKUDE_TEST_JOBS:-4}" -d "$HERE" -e "$env" > "$OUT.$env.log" 2>&1; then
         echo "build failed, see $OUT.$env.log"
+        tail -80 "$OUT.$env.log"
         status=1
         continue
     fi
