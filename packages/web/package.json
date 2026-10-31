@@ -1,5 +1,5 @@
 {
-  "name": "qrkude",
+  "name": "@kudelink/qrkude",
   "version": "0.1.0",
   "description": "Styled QR codes for the web: dot, fluid, liquid and bar modules, custom eyes, gradients, logos and labels. Byte-identical SVG with every QRKude port.",
   "license": "Apache-2.0",
@@ -64,6 +64,10 @@
   ],
   "engines": {
     "node": ">=16"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   },
   "scripts": {
     "build": "node scripts/build.mjs",

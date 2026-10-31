@@ -2,24 +2,24 @@
   Copyright 2026 The QRKude Authors
   SPDX-License-Identifier: Apache-2.0
 -->
-# qrkude
+# @kudelink/qrkude
 
-`qrkude` turns text into styled QR codes for the web: SVG markup, canvas
+`@kudelink/qrkude` turns text into styled QR codes for the web: SVG markup, canvas
 drawings, PNG files, or a `<qr-kude>` HTML element.
-It is the JavaScript/TypeScript package of [QRKude](../../README.md), a family
+It is the JavaScript/TypeScript package of [QRKude](https://github.com/kudelink/qrkude/blob/main/README.md), a family
 of libraries that read the same style document and produce the same SVG on
 every platform.
 
 <p>
-<img src="../../docs/images/liquid.svg" width="140" alt="QR code with liquid modules">
-<img src="../../docs/images/gradient.svg" width="140" alt="QR code with a linear gradient">
-<img src="../../docs/images/logo.svg" width="140" alt="QR code with a logo in the center">
-<img src="../../docs/images/frame.svg" width="140" alt="QR code in a frame with a label">
+<img src="https://raw.githubusercontent.com/kudelink/qrkude/main/docs/images/liquid.svg" width="140" alt="QR code with liquid modules">
+<img src="https://raw.githubusercontent.com/kudelink/qrkude/main/docs/images/gradient.svg" width="140" alt="QR code with a linear gradient">
+<img src="https://raw.githubusercontent.com/kudelink/qrkude/main/docs/images/logo.svg" width="140" alt="QR code with a logo in the center">
+<img src="https://raw.githubusercontent.com/kudelink/qrkude/main/docs/images/frame.svg" width="140" alt="QR code in a frame with a label">
 </p>
 
 ## Status and installation
 
-`qrkude` is **pre-release** (version 0.1.0). It is **not yet published** to
+`@kudelink/qrkude` is **pre-release** (version 0.1.0). It is **not yet published** to
 the npm registry, so install it from a clone of this repository.
 
 Build the package once:
@@ -42,9 +42,9 @@ or as a tarball, which copies the files instead of linking them:
 
 ```sh
 cd "$REPO/packages/web"
-npm pack                   # writes qrkude-0.1.0.tgz
+npm pack                   # writes kudelink-qrkude-0.1.0.tgz
 cd /path/to/your-project
-npm install "$REPO/packages/web/qrkude-0.1.0.tgz"
+npm install "$REPO/packages/web/kudelink-qrkude-0.1.0.tgz"
 ```
 
 Installing from the folder creates a link. Run `npm run build` again after
@@ -57,16 +57,30 @@ a global `QRKude` object and registers the `<qr-kude>` element.
 Once the package is published, the install command will be:
 
 ```sh
-npm install qrkude
+npm install @kudelink/qrkude
 ```
+
+The package is configured for public publishing under the `@kudelink` npm
+scope. From `packages/web`, authenticate with an npm account that has
+publishing access to that scope, then check the package before publishing:
+
+```sh
+npm login --registry=https://registry.npmjs.org/
+npm publish --dry-run
+```
+
+For a release, run `npm publish`. The `prepublishOnly` script builds the
+package and runs its tests. `publishConfig` selects the public npm registry
+and public access. npm authentication is separate from the SSH key used for
+GitHub.
 
 ## Quick start
 
-Save this as `qr.mjs` in a project where `qrkude` is installed:
+Save this as `qr.mjs` in a project where `@kudelink/qrkude` is installed:
 
 ```js
 import { writeFileSync } from 'node:fs';
-import { svg } from 'qrkude';
+import { svg } from '@kudelink/qrkude';
 
 writeFileSync('qr.svg', svg('https://example.com'));
 ```
@@ -87,11 +101,11 @@ The same thing in a web page, with the browser bundle:
 </script>
 ```
 
-New to QR codes? Read the [guide](../../docs/GUIDE.md).
+New to QR codes? Read the [guide](https://github.com/kudelink/qrkude/blob/main/docs/GUIDE.md).
 
 ## Styling
 
-A few terms used below (the [glossary](../../docs/GUIDE.md#glossary) has
+A few terms used below (the [glossary](https://github.com/kudelink/qrkude/blob/main/docs/GUIDE.md#glossary) has
 more):
 
 - A **module** is one square cell of the code.
@@ -129,7 +143,7 @@ their defaults, and unknown keys are ignored.
 Pass the document as an object or as JSON text:
 
 ```js
-import { svg } from 'qrkude';
+import { svg } from '@kudelink/qrkude';
 
 const markup = svg('https://example.com', {
   style: {
@@ -148,7 +162,7 @@ correction (`H`) unless you set `encode.ecc` yourself.
 
 ```js
 import { writeFileSync } from 'node:fs';
-import { generate } from 'qrkude';
+import { generate } from '@kudelink/qrkude';
 
 const logo =
   'data:image/svg+xml;utf8,' +
@@ -186,7 +200,7 @@ In that object colors are numbers (`0xRRGGBBAA`) and gradients are paint
 objects. `rgba()`, `parseColor()` and the paint helpers build them:
 
 ```ts
-import { encodeForStyle, linearPaint, parseStyle, rgba, toSvg } from 'qrkude';
+import { encodeForStyle, linearPaint, parseStyle, rgba, toSvg } from '@kudelink/qrkude';
 
 const style = parseStyle({ modules: { shape: 'rounded', size: 0.9 } });
 style.modules.color = linearPaint(90, rgba(11, 61, 145), rgba(0, 168, 150));
@@ -202,19 +216,19 @@ console.log(code.version, markup.length);
 
 | Group | JSON keys | Reference |
 |---|---|---|
-| Modules | `modules.shape` (11 shapes), `size`, `roundness`, `color` | [STYLES.md#modules](../../docs/STYLES.md#modules) |
-| Eyes | `eyes.frame`, `ball` (8 shapes each), `frameColor`, `ballColor` | [STYLES.md#eyes](../../docs/STYLES.md#eyes) |
-| Alignment patterns | `alignment.frame`, `ball` (the small squares in larger codes) | [STYLES.md#alignment-patterns](../../docs/STYLES.md#alignment-patterns) |
-| Colors | `"#rgb"`, `"#rrggbb"`, `"#rrggbbaa"`, `"transparent"`, linear and radial gradients | [STYLES.md#colors-and-gradients](../../docs/STYLES.md#colors-and-gradients) |
-| Background and border | `margin`, `background.color`, `radius`, `border.width`, `color` | [STYLES.md#background-and-border](../../docs/STYLES.md#background-and-border) |
-| Logo | `logo.href`, `size`, `margin`, `shape`, `excavate`, `background` | [STYLES.md#logo](../../docs/STYLES.md#logo) |
-| Label | `label.text`, `font`, `size`, `color`, `position`, `bold` | [STYLES.md#label](../../docs/STYLES.md#label) |
-| Encoding | `encode.ecc`, `minVersion`, `maxVersion`, `mask`, `boostEcc`, `eci` | [STYLES.md#encoding-options](../../docs/STYLES.md#encoding-options) |
-| SVG | `svg.width`, `idPrefix` | [STYLES.md#svg-options](../../docs/STYLES.md#svg-options) |
+| Modules | `modules.shape` (11 shapes), `size`, `roundness`, `color` | [STYLES.md#modules](https://github.com/kudelink/qrkude/blob/main/docs/STYLES.md#modules) |
+| Eyes | `eyes.frame`, `ball` (8 shapes each), `frameColor`, `ballColor` | [STYLES.md#eyes](https://github.com/kudelink/qrkude/blob/main/docs/STYLES.md#eyes) |
+| Alignment patterns | `alignment.frame`, `ball` (the small squares in larger codes) | [STYLES.md#alignment-patterns](https://github.com/kudelink/qrkude/blob/main/docs/STYLES.md#alignment-patterns) |
+| Colors | `"#rgb"`, `"#rrggbb"`, `"#rrggbbaa"`, `"transparent"`, linear and radial gradients | [STYLES.md#colors-and-gradients](https://github.com/kudelink/qrkude/blob/main/docs/STYLES.md#colors-and-gradients) |
+| Background and border | `margin`, `background.color`, `radius`, `border.width`, `color` | [STYLES.md#background-and-border](https://github.com/kudelink/qrkude/blob/main/docs/STYLES.md#background-and-border) |
+| Logo | `logo.href`, `size`, `margin`, `shape`, `excavate`, `background` | [STYLES.md#logo](https://github.com/kudelink/qrkude/blob/main/docs/STYLES.md#logo) |
+| Label | `label.text`, `font`, `size`, `color`, `position`, `bold` | [STYLES.md#label](https://github.com/kudelink/qrkude/blob/main/docs/STYLES.md#label) |
+| Encoding | `encode.ecc`, `minVersion`, `maxVersion`, `mask`, `boostEcc`, `eci` | [STYLES.md#encoding-options](https://github.com/kudelink/qrkude/blob/main/docs/STYLES.md#encoding-options) |
+| SVG | `svg.width`, `idPrefix` | [STYLES.md#svg-options](https://github.com/kudelink/qrkude/blob/main/docs/STYLES.md#svg-options) |
 
-A complete document is in [STYLES.md#complete-example](../../docs/STYLES.md#complete-example).
+A complete document is in [STYLES.md#complete-example](https://github.com/kudelink/qrkude/blob/main/docs/STYLES.md#complete-example).
 Before you change eye shapes, colors or logo sizes, read
-[styling without breaking scanning](../../docs/GUIDE.md#styling-without-breaking-scanning).
+[styling without breaking scanning](https://github.com/kudelink/qrkude/blob/main/docs/GUIDE.md#styling-without-breaking-scanning).
 
 When `encode.ecc` is absent, the level is `H` if the style has a logo and
 `M` otherwise. `svg()`, `generate()`, `encodeForStyle()` and `<qr-kude>` all
@@ -227,7 +241,7 @@ does not make the code bigger.
 | Output | Functions | Runs in |
 |---|---|---|
 | SVG text | `svg()`, `generate()`, `toSvg()` | browsers, workers, Node |
-| `<qr-kude>` element (inline SVG) | `import 'qrkude/element'` or the browser bundle | browsers |
+| `<qr-kude>` element (inline SVG) | `import '@kudelink/qrkude/element'` or the browser bundle | browsers |
 | Canvas drawing | `renderToCanvas()` | browsers, workers (`OffscreenCanvas`) |
 | PNG, JPEG or WebP | `toBlob()`, `toDataURL()` | browsers, workers (`OffscreenCanvas`) |
 | Vector paths for your own renderer | `emitLayer()`, `layerToCanvasPath()` | everywhere |
@@ -298,7 +312,7 @@ width in modules is `getLayout(code, style).width`, which is the modules plus
 twice the margin and border. So `size / getLayout(code, style).width` gives
 the pixels per module. A short URL (25 modules + 2 × 4 margin = 33) at 512 px
 gives about 15 px per module, which is plenty for screens. For printed codes
-see [size in print and on screen](../../docs/GUIDE.md#size-in-print-and-on-screen).
+see [size in print and on screen](https://github.com/kudelink/qrkude/blob/main/docs/GUIDE.md#size-in-print-and-on-screen).
 
 ### The `<qr-kude>` element
 
@@ -314,7 +328,7 @@ see [size in print and on screen](../../docs/GUIDE.md#size-in-print-and-on-scree
          config='{"style": {"modules": {"shape": "liquid"}, "background": {"radius": 3}}}'></qr-kude>
 ```
 
-With a bundler, use `import 'qrkude/element';` instead of the script tag.
+With a bundler, use `import '@kudelink/qrkude/element';` instead of the script tag.
 Importing it registers the element as `qr-kude`.
 
 | Attribute | Meaning |
@@ -356,7 +370,7 @@ into a PDF, a plotter file or WebGL. Coordinates are in modules, with y
 pointing down. Every sub-path is closed and the fill rule is non-zero.
 
 ```js
-import { LAYERS, emitLayer, encode, getLayout, layerPaint, parseStyle } from 'qrkude';
+import { LAYERS, emitLayer, encode, getLayout, layerPaint, parseStyle } from '@kudelink/qrkude';
 
 const style = parseStyle({ modules: { shape: 'dot' } });
 const code = encode('https://example.com');
@@ -382,7 +396,7 @@ These functions build the text for common QR code contents. Pass the result
 to `svg()`, `generate()` or `encode()`:
 
 ```js
-import { svg, wifi } from 'qrkude';
+import { svg, wifi } from '@kudelink/qrkude';
 
 const markup = svg(wifi('Cafe Guest', 'espresso', 'WPA'));
 console.log(markup.startsWith('<svg'));
@@ -420,7 +434,7 @@ Every styling choice costs some readability. `generate()` returns warnings
 style)` and `logoDamage(code, style)` yourself:
 
 ```js
-import { LINT_MESSAGES, generate } from 'qrkude';
+import { LINT_MESSAGES, generate } from '@kudelink/qrkude';
 
 const result = generate('https://example.com', {
   style: { modules: { color: '#9e9e9e' }, margin: 1 },
@@ -445,18 +459,18 @@ for (const flag of result.lint) console.log(flag, '-', LINT_MESSAGES[flag]);
 **Logo damage** is a number. 0 means there is no logo. Up to about 0.7
 leaves a safety margin. Between 0.7 and 1 the code is fragile. Above 1 it
 cannot be decoded. The number is the share of the worst error-correction
-block's repair capacity that the logo area hides. See [logos](../../docs/GUIDE.md#logos)
+block's repair capacity that the logo area hides. See [logos](https://github.com/kudelink/qrkude/blob/main/docs/GUIDE.md#logos)
 for how size, clear space and ECC interact.
 
 These checks catch common mistakes but do not replace a real test. Scan the
 final code with a few phones, in print size and in real light; see
-[testing your codes](../../docs/GUIDE.md#testing-your-codes) and
-[troubleshooting](../../docs/GUIDE.md#troubleshooting).
+[testing your codes](https://github.com/kudelink/qrkude/blob/main/docs/GUIDE.md#testing-your-codes) and
+[troubleshooting](https://github.com/kudelink/qrkude/blob/main/docs/GUIDE.md#troubleshooting).
 
 ## Untrusted styles
 
 Styles often come from forms, databases or URLs, and the SVG usually ends up
-inside a page. `qrkude` is built for that:
+inside a page. `@kudelink/qrkude` is built for that:
 
 - **No markup injection.** The logo URL, font and label text are XML-escaped
   (`& < > "`), and control characters other than tab, LF and CR are dropped.
@@ -491,7 +505,7 @@ inside a page. `qrkude` is built for that:
 | `'data too long'` | `'data-too-long'` | The text does not fit in a QR code with the given options. |
 
 ```js
-import { QRKudeError, svg } from 'qrkude';
+import { QRKudeError, svg } from '@kudelink/qrkude';
 
 const userInput = '{"style": {"margin": 1e999}}';
 try {
@@ -512,7 +526,7 @@ Two things the library does not decide for you:
 
 ## API reference
 
-All symbols come from `qrkude` unless noted. Types are TypeScript.
+All symbols come from `@kudelink/qrkude` unless noted. Types are TypeScript.
 
 ### Encoding
 
@@ -665,7 +679,7 @@ All symbols come from `qrkude` unless noted. Types are TypeScript.
 | `QRKudeErrorCode` | `'parse' \| 'invalid-argument' \| 'data-too-long'` | The same kinds as identifiers. |
 | `VERSION` | `'0.1.0'` | Package version. |
 
-### Web component (`qrkude/element`)
+### Web component (`@kudelink/qrkude/element`)
 
 | Symbol | Signature | Description |
 |---|---|---|
@@ -673,7 +687,7 @@ All symbols come from `qrkude` unless noted. Types are TypeScript.
 | `defineQRKudeElement` | `(name?: string) => void` | Registers the element under another tag name (default `qr-kude`). Calling it twice is safe. |
 | `QRKudeRenderDetail` | `{ svg: string; code: QRCode; lint: LintFlag[]; logoDamage: number }` | `detail` of the `qrkude-render` event. |
 
-Importing `qrkude/element` registers `qr-kude` as a side effect, when
+Importing `@kudelink/qrkude/element` registers `qr-kude` as a side effect, when
 `customElements` exists. The browser bundle `dist/qrkude.min.js` exposes
 everything above, including the element exports, as `window.QRKude`.
 
@@ -725,10 +739,10 @@ npm run build:demo    # writes demo/dist/playground.html
 ```
 
 `npm test` reproduces every conformance vector in
-[`spec/vectors`](../../spec/vectors) byte for byte. It also checks that the
+[`spec/vectors`](https://github.com/kudelink/qrkude/tree/main/spec/vectors) byte for byte. It also checks that the
 canvas geometry equals the SVG geometry and covers the API, the CommonJS
 build and the browser bundle. The normative rules for all ports are in
-[SPEC.md](../../docs/SPEC.md).
+[SPEC.md](https://github.com/kudelink/qrkude/blob/main/docs/SPEC.md).
 
 The decode check renders a set of styles and reads them back with a real
 decoder. It needs Python with `cairosvg`, `zxing-cpp` and `pillow`:
@@ -748,4 +762,4 @@ The folder layout:
 
 ## License
 
-Apache-2.0. See [LICENSE](../../LICENSE).
+Apache-2.0. See [LICENSE](https://github.com/kudelink/qrkude/blob/main/LICENSE).

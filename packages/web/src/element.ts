@@ -1,5 +1,5 @@
 /*
- * QRKude - <qr-kude> web component (entry "qrkude/element").
+ * QRKude - <qr-kude> web component (entry "@kudelink/qrkude/element").
  *
  *   <qr-kude value="https://kudelink.com" module-shape="fluid" color="#1d3557"></qr-kude>
  *   <qr-kude value="..." config='{"style": {"modules": {"shape": "dot"}}}'></qr-kude>

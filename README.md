@@ -86,7 +86,7 @@ npm run build:demo
 
 | You are building | Use | Read |
 |---|---|---|
-| A website, a web app or a Node.js service | `qrkude` for JavaScript/TypeScript | [packages/web](packages/web/README.md) |
+| A website, a web app or a Node.js service | `@kudelink/qrkude` for JavaScript/TypeScript | [packages/web](packages/web/README.md) |
 | A Python script, server or command-line tool | `qrkude` for Python | [packages/python](packages/python/README.md) |
 | A Rust program, or Rust on a microcontroller | `qrkude` crate (`no_std` supported) | [packages/rust](packages/rust/README.md) |
 | A Flutter app (mobile, desktop, web) | `qrkude_flutter` | [packages/flutter](packages/flutter/README.md) |
@@ -105,7 +105,7 @@ and the full API.
 **JavaScript / TypeScript**
 
 ```js
-import { svg } from 'qrkude';
+import { svg } from '@kudelink/qrkude';
 
 document.body.innerHTML = svg('https://kudelink.com', {
   style: { modules: { shape: 'fluid', color: '#1d3557' }, eyes: { frame: 'rounded', ball: 'circle' } },
@@ -115,7 +115,7 @@ document.body.innerHTML = svg('https://kudelink.com', {
 As a web component:
 
 ```html
-<script type="module">import 'qrkude/element';</script>
+<script type="module">import '@kudelink/qrkude/element';</script>
 <qr-kude value="https://kudelink.com" module-shape="dot" eye-frame="circle"></qr-kude>
 ```
 

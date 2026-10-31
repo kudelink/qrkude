@@ -12,7 +12,7 @@ import * as esbuild from 'esbuild';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(root, 'dist');
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
-const banner = `/*! qrkude ${pkg.version} | Copyright 2026 The QRKude Authors | SPDX-License-Identifier: Apache-2.0 */`;
+const banner = `/*! ${pkg.name} ${pkg.version} | Copyright 2026 The QRKude Authors | SPDX-License-Identifier: Apache-2.0 */`;
 
 rmSync(dist, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
