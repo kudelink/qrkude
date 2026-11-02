@@ -53,8 +53,9 @@ runs in your browser.
   missing margins, risky logos and eye shapes that scanners reject.
 - **Build common contents**: Wi-Fi access, contacts (vCard), calendar events,
   e-mail, SMS, phone numbers and map locations.
-- **Output** SVG everywhere, plus PNG, pixels for small displays, and native
-  drawing in Qt, Flutter and the web canvas.
+- **Output** SVG everywhere, plus PNG, pixels for small displays, native
+  drawing in Qt, Flutter and the web canvas, and text for terminals and
+  serial monitors ([details](docs/GUIDE.md#showing-a-code-in-a-terminal)).
 
 New to QR codes? The [guide](docs/GUIDE.md) explains how they work and what
 you can safely change, with pictures.
@@ -278,9 +279,9 @@ in [SPEC §2.0](docs/SPEC.md#20-reading-the-json).
 The C library in [`core/`](core) is the reference implementation. The
 [specification](docs/SPEC.md) describes every detail that affects the output
 (shape geometry, drawing order, number formatting, gradient geometry), and
-[`spec/vectors/`](spec/vectors) holds 205 shared test cases generated from
+[`spec/vectors/`](spec/vectors) holds 224 shared test cases generated from
 the reference: module grids for every size, exact SVG files for every
-option, content strings, warnings and logo damage. Every package runs all of
+option, exact text output, content strings, warnings and logo damage. Every package runs all of
 them in its test suite.
 
 ## Repository layout

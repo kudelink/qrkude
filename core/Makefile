@@ -4,7 +4,7 @@ CFLAGS  ?= -O2
 CFLAGS  += -std=c99 -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wno-sign-conversion -Iinclude
 LDLIBS  += -lm
 
-SRC  := src/qrk_encode.c src/qrk_layout.c src/qrk_svg.c src/qrk_raster.c src/qrk_json.c src/qrk_payload.c src/qrk_lint.c
+SRC  := src/qrk_encode.c src/qrk_layout.c src/qrk_svg.c src/qrk_raster.c src/qrk_json.c src/qrk_payload.c src/qrk_lint.c src/qrk_text.c
 OBJ  := $(SRC:src/%.c=build/%.o)
 
 all: build/libqrkude.a build/qrkude build/qrkude-payload build/test_core

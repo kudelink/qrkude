@@ -43,7 +43,8 @@ SOURCES += \
     $$QRKUDE_CORE_DIR/src/qrk_raster.c \
     $$QRKUDE_CORE_DIR/src/qrk_json.c \
     $$QRKUDE_CORE_DIR/src/qrk_payload.c \
-    $$QRKUDE_CORE_DIR/src/qrk_lint.c
+    $$QRKUDE_CORE_DIR/src/qrk_lint.c \
+    $$QRKUDE_CORE_DIR/src/qrk_text.c
 HEADERS += $$QRKUDE_CORE_DIR/src/qrk_internal.h
 !msvc: QMAKE_CFLAGS += -std=c99
 unix: LIBS += -lm

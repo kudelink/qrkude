@@ -78,6 +78,8 @@ export {
 export type { GradientGeometry, Layer, Layout, PathSink } from './layout.js';
 
 export { SvgPathWriter, escapeXml, formatNumber, sanitizeIdPrefix, toSvg } from './svg.js';
+export { TEXT_COLORS, TEXT_STYLES, textSize, toText } from './text.js';
+export type { TextColors, TextOptions, TextSize, TextStyle } from './text.js';
 export { LINT_FLAGS, LINT_MESSAGES, lint } from './lint.js';
 export type { LintFlag } from './lint.js';
 export { email, event, geo, sms, tel, vcard, wifi } from './payload.js';

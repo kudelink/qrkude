@@ -422,6 +422,32 @@ static void test_svg_and_ascii()
         lines += h.data[i] == '\n';
     CHECK(lines == (size_t)(size + 4 + 1) / 2);
     fputs(h.data.c_str(), stdout);
+
+    /* printAscii() == the core's qrk_text_to_buffer() (SPEC 14) */
+    const QRKude::AsciiStyle styles[] = {QRKude::ASCII_HALF_BLOCKS, QRKude::ASCII_FULL_BLOCKS,
+                                         QRKude::ASCII_HASH};
+    for (int s = 0; s < 3; s++) {
+        for (int variant = 0; variant < 8; variant++) {
+            bool invert = variant & 1, ansi = variant & 2;
+            uint8_t margin = variant & 4 ? 200 : 2; /* 200 is clamped to 16 */
+            qrk_text_opts o;
+            qrk_text_opts_default(&o);
+            o.style = (uint8_t)styles[s];
+            o.margin = margin;
+            o.invert = invert;
+            o.colors = ansi ? QRK_TEXT_COLORS_ANSI : QRK_TEXT_COLORS_NONE;
+            size_t len = qrk_text_to_buffer(qr.code(), &o, NULL, 0);
+            std::vector<char> want(len + 1);
+            qrk_text_to_buffer(qr.code(), &o, want.data(), want.size());
+            StringPrint t;
+            CHECK(qr.printAscii(t, styles[s], invert, margin, ansi) == len);
+            CHECK(t.data == std::string(want.data(), len));
+        }
+    }
+    StringPrint c;
+    qr.printAscii(c, QRKude::ASCII_HALF_BLOCKS, false, 2, true);
+    CHECK(c.data.compare(0, 9, "\x1b[30;107m") == 0);
+    CHECK(c.data.compare(c.data.size() - 5, 5, "\x1b[0m\n") == 0);
 }
 
 static void test_payloads_and_limits()

@@ -22,7 +22,8 @@ set(srcs
     "${qrkude_core}/src/qrk_raster.c"
     "${qrkude_core}/src/qrk_json.c"
     "${qrkude_core}/src/qrk_payload.c"
-    "${qrkude_core}/src/qrk_lint.c")
+    "${qrkude_core}/src/qrk_lint.c"
+    "${qrkude_core}/src/qrk_text.c")
 set(includes "${qrkude_core}/include")
 set(requires "")
 

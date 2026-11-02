@@ -1,7 +1,7 @@
 // Copyright 2026 The QRKude Authors
 // SPDX-License-Identifier: Apache-2.0
 //
-// Conformance: every case of spec/vectors/{encode,render,payloads}.json must
+// Conformance: every case of spec/vectors/{encode,render,payloads,text}.json must
 // be reproduced byte for byte by the built package (dist/index.mjs).
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -15,9 +15,10 @@ const vectors = (name) =>
 const encodeCases = vectors('encode');
 const renderCases = vectors('render');
 const payloadCases = vectors('payloads');
+const textCases = vectors('text');
 
 test('vector files are not empty', () => {
-  assert.ok(encodeCases.length > 0 && renderCases.length > 0 && payloadCases.length > 0);
+  assert.ok(encodeCases.length > 0 && renderCases.length > 0 && payloadCases.length > 0 && textCases.length > 0);
 });
 
 for (const [i, c] of encodeCases.entries()) {
@@ -105,6 +106,23 @@ for (const [i, c] of payloadCases.entries()) {
     assert.equal(typeof fn, 'function');
     const out = argOrder[c.type] ? fn(...argOrder[c.type].map((k) => c.args[k])) : fn(c.args);
     assert.equal(out, c.output);
+  });
+}
+
+for (const c of textCases) {
+  test(`text ${c.name}`, () => {
+    const code = Q.encode(c.text, c.encode);
+    assert.equal(code.version, c.version, 'version');
+    assert.equal(code.ecc, c.ecc, 'ecc');
+    assert.equal(code.mask, c.mask, 'mask');
+    const out = Q.toText(code, c.options);
+    assert.equal(out, c.output);
+    // textSize: lines end with "\n"; columns are characters without ANSI codes
+    const lines = out.split('\n');
+    assert.equal(lines.pop(), '', 'a "\\n" after the last line');
+    const columns = lines.map((l) => Array.from(l.replace(/\x1b\[[0-9;]*m/g, '')).length);
+    assert.deepEqual(Q.textSize(code, c.options), { columns: columns[0], lines: lines.length });
+    assert.ok(columns.every((w) => w === columns[0]), 'every line has the same width');
   });
 }
 

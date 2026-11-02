@@ -233,6 +233,34 @@ def encode_cases():
     return c
 
 
+def text_cases():
+    c = []
+
+    def add(name, text="QRKude", encode=None, style="half_blocks", margin=2, invert=False, colors="none"):
+        case = {"name": name, "text": text}
+        if encode is not None:
+            case["encode"] = encode
+        case["options"] = {"style": style, "margin": margin, "invert": invert, "colors": colors}
+        c.append(case)
+
+    for style in ("half_blocks", "full_blocks", "hash"):
+        add(style, style=style)
+        add(style + "-invert", style=style, invert=True)
+        add(style + "-ansi", style=style, colors="ansi")
+    add("ansi-invert", colors="ansi", invert=True)
+    for margin in (0, 4, 17):
+        add(f"margin-{margin}", margin=margin)
+    add("hash-margin-0", style="hash", margin=0)
+    add("full_blocks-margin-4", style="full_blocks", margin=4)
+    # 141 Base45 characters: alphanumeric mode, version 6 at ECC M (45 x 23)
+    base45 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:"
+    add("version-6-base45", (base45 * 4)[:141], colors="ansi")
+    add("version-6-invert", URL, encode={"minVersion": 6}, invert=True)
+    add("version-10", URL, encode={"minVersion": 10})
+    add("version-10-hash", URL, encode={"minVersion": 10}, style="hash", margin=4)
+    return c
+
+
 def payload_cases():
     return [
         {"type": "wifi", "args": {"ssid": "Kude", "password": "secret", "auth": "WPA", "hidden": False}},
@@ -319,6 +347,19 @@ def main():
             out["matrix"] = matrix.split()
         encodes.append(out)
 
+    texts = []
+    for case in text_cases():
+        doc = {"encode": case["encode"]} if "encode" in case else {}
+        meta = info(case["text"], doc)
+        o = case["options"]
+        argv = [CLI, "--stdin", "-j", json.dumps(doc), "--text", "--text-style", o["style"],
+                "--margin", str(o["margin"])]
+        argv += ["--invert"] if o["invert"] else []
+        argv += ["--ansi"] if o["colors"] == "ansi" else []
+        code, out, err = run(argv, case["text"])
+        assert code == 0, (case["name"], err)
+        texts.append(dict(case, **{k: meta[k] for k in ("version", "ecc", "mask")}, output=out))
+
     payloads = []
     order = {
         "wifi": ["ssid", "password", "auth", "hidden"], "email": ["to", "subject", "body"],
@@ -341,7 +382,7 @@ def main():
         assert code == 0, err
         payloads.append(dict(case, output=out))
 
-    for name, data in (("render", renders), ("encode", encodes), ("payloads", payloads)):
+    for name, data in (("render", renders), ("encode", encodes), ("payloads", payloads), ("text", texts)):
         path = os.path.join(OUT, name + ".json")
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=1)

@@ -301,6 +301,58 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
+**Text.** `to_text` returns the code as text, to print in a terminal or a
+serial monitor and scan from the screen. It always draws plain square
+modules: the style does not apply. `write_text` streams the same text into
+any `core::fmt::Write` and works without `std`. The output is the same in
+every QRKude library ([SPEC §14](../../docs/SPEC.md#14-text-output)).
+`TextOptions` has four fields:
+
+- `style`: `TextStyle::HalfBlocks` (default) puts two rows of modules in one
+  line with `▀`, `▄` and `█`, so the code looks square and takes the least
+  room. `FullBlocks` writes `██` for each dark module, `Hash` writes `##`.
+- `margin`: light modules around the code (the quiet zone). The default is
+  2; values above 16 count as 16.
+- `invert`: swaps dark and light.
+- `colors`: `TextColors::Ansi` adds color codes to every line, so the code
+  shows black on bright white in any terminal theme. `TextColors::None`
+  (default) adds nothing.
+
+`text_size` gives the size on screen as `(columns, lines)`; color codes take
+no room. With the defaults, version 6 (41 by 41 modules, 45 by 23
+characters) is the largest code that fits an 80 by 24 terminal.
+
+Choosing the colors is up to your program. The recommended rule: use `Ansi`
+when the output is a terminal and the `NO_COLOR` environment variable is
+unset or empty; otherwise use `None`, and `invert` only if the user asks for
+it.
+
+```rust
+use std::io::IsTerminal;
+
+use qrkude::{encode_text, text_size, to_text, EncodeOptions, TextColors, TextOptions};
+
+fn main() -> Result<(), qrkude::Error> {
+    let code = encode_text("https://example.com", &EncodeOptions::default())?;
+
+    // Colors for a terminal, unless the user turned them off with NO_COLOR.
+    let no_color = std::env::var_os("NO_COLOR").is_some_and(|v| !v.is_empty());
+    let ansi = std::io::stdout().is_terminal() && !no_color;
+    let opts = TextOptions { colors: if ansi { TextColors::Ansi } else { TextColors::None }, ..TextOptions::default() };
+
+    // 25 modules + a margin of 2 on each side; 2 rows of modules per line.
+    assert_eq!(text_size(&code, &opts), (29, 15));
+    print!("{}", to_text(&code, &opts));
+    Ok(())
+}
+```
+
+Use `TextStyle::Hash` when the terminal has no UTF-8, or shows the block
+characters two columns wide (common with Chinese, Japanese and Korean
+settings). More tips for scanning from the screen are in the guide:
+[Showing a code in a terminal](../../docs/GUIDE.md#showing-a-code-in-a-terminal).
+`cargo run --example terminal -- "some text"` prints any text this way.
+
 **Your own renderer.** `emit_layer` sends the outline of one layer
 (`Background`, `Border`, `Modules`, `EyeFrames`, `EyeBalls`, `LogoBackground`)
 to anything that implements `PathSink`: closed shapes made of straight lines
@@ -509,6 +561,15 @@ feature. The generated rustdoc has the details.
 - `fn pixel_buffer_size(format: PixelFormat, width: u32, height: u32) -> usize`.
 - `struct Image<'a> { width: u32, height: u32, format: PixelFormat, pixels: &'a [u8], stride: usize }`: a logo bitmap; `fn new(width, height, format, pixels)`, `fn rgba(width, height, pixels)`.
 
+**Text**
+
+- `fn to_text(code: &QrCode, opts: &TextOptions) -> String`: the code as text for a terminal.
+- `fn write_text<W: core::fmt::Write + ?Sized>(code: &QrCode, opts: &TextOptions, out: &mut W) -> core::fmt::Result`: streams the same text; works without `std`.
+- `fn text_size(code: &QrCode, opts: &TextOptions) -> (usize, usize)`: `(columns, lines)` on screen.
+- `struct TextOptions { style: TextStyle, margin: u8, invert: bool, colors: TextColors }`: `Default` is half blocks, margin 2 (above 16 counts as 16), not inverted, no colors.
+- `enum TextStyle { HalfBlocks, FullBlocks, Hash }`: the characters used (`▀▄█`, `██` or `##`); `Default` is `HalfBlocks`.
+- `enum TextColors { None, Ansi }`: `Ansi` writes black on bright white with ANSI color codes; `Default` is `None`.
+
 **Geometry**
 
 - `fn layout(code: &QrCode, style: &Style) -> Layout`.
@@ -557,7 +618,8 @@ feature. The generated rustdoc has the details.
   1.5 KB of heap and keeps 410 bytes; the largest code (version 40,
   177 by 177) peaks at about 15 KB and keeps 3.9 KB. The rasterizer keeps no
   image: about 1.4 KB of state on the stack, plus a copy of the gradient
-  stops. `write_svg` buffers nothing beyond one number.
+  stops. `write_svg` buffers nothing beyond one number, and `write_text`
+  nothing at all.
 - **Speed.** Measured on a laptop CPU (AMD Ryzen 7 5700U, release build):
   encoding takes 0.08 ms for a short web address (version 2), 0.6 ms for
   version 10 and 6 ms for version 40. The SVG takes 0.05 to 0.13 ms at
@@ -565,9 +627,9 @@ feature. The generated rustdoc has the details.
   dots and liquid shapes make the largest files). Rasterizing a
   512 by 512 image with `supersample` 2 takes about 20 ms. A microcontroller
   is much slower; lower `supersample` to 1 there if needed.
-- **Same output everywhere.** SVG output is byte-for-byte identical across
-  platforms and QRKude languages, and raster output is identical to the C
-  library's rasterizer.
+- **Same output everywhere.** SVG and text output are byte-for-byte
+  identical across platforms and QRKude languages, and raster output is
+  identical to the C library's rasterizer.
 - **Limitations.** The whole text is stored in one mode (numeric,
   alphanumeric or byte); mixed content is not split into segments, so some
   codes are one version larger than strictly needed. Kanji mode, Micro QR,
@@ -586,13 +648,14 @@ cargo test --no-default-features              # the no_std build (math through l
 cargo test --no-default-features --features json
 cargo run --example basic --features png -- out/     # writes out/basic.svg and out/basic.png
 cargo run --example styles --features png -- gallery/  # a gallery of styles with an index.html
+cargo run --example terminal -- "some text"          # prints a code in the terminal
 ```
 
 The conformance tests (`tests/vectors.rs`) read the shared test vectors in
-`../../spec/vectors` and require every SVG, grid, text payload, warning and
-error to match the C reference implementation exactly. The rules are written
-down in [SPEC.md](../../docs/SPEC.md). Two environment variables control
-these tests:
+`../../spec/vectors` and require every SVG, grid, terminal text, content
+helper string, warning and error to match the C reference implementation
+exactly. The rules are written down in [SPEC.md](../../docs/SPEC.md). Two
+environment variables control these tests:
 
 - `QRKUDE_VECTORS_DIR=/path/to/spec/vectors` uses another copy of the vectors.
 - `QRKUDE_REQUIRE_VECTORS=1` makes missing vectors a failure; by default the

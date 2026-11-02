@@ -5,7 +5,8 @@
 # @kudelink/qrkude
 
 `@kudelink/qrkude` turns text into styled QR codes for the web: SVG markup, canvas
-drawings, PNG files, or a `<qr-kude>` HTML element.
+drawings, PNG files, or a `<qr-kude>` HTML element. It can also print a plain
+code in a terminal.
 It is the JavaScript/TypeScript package of [QRKude](https://github.com/kudelink/qrkude/blob/main/README.md), a family
 of libraries that read the same style document and produce the same SVG on
 every platform.
@@ -245,6 +246,7 @@ does not make the code bigger.
 | Canvas drawing | `renderToCanvas()` | browsers, workers (`OffscreenCanvas`) |
 | PNG, JPEG or WebP | `toBlob()`, `toDataURL()` | browsers, workers (`OffscreenCanvas`) |
 | Vector paths for your own renderer | `emitLayer()`, `layerToCanvasPath()` | everywhere |
+| Text for terminals | `toText()` | everywhere |
 
 ### SVG
 
@@ -390,6 +392,51 @@ for (const layer of LAYERS) {
 console.log('canvas is', layout.width, 'x', layout.height, 'modules');
 ```
 
+### Text
+
+`toText()` writes the code as text, for command-line tools, SSH sessions and
+serial consoles. It draws square modules only: the style does not apply.
+Save this as `terminal.mjs` and run `node terminal.mjs`:
+
+```js
+import { encode, textSize, toText } from '@kudelink/qrkude';
+
+const code = encode('https://example.com');
+const out = process.stdout;
+
+// Colors only in a terminal, and only when NO_COLOR is not set.
+const colors = out.isTTY && !process.env.NO_COLOR ? 'ansi' : 'none';
+
+const { columns, lines } = textSize(code);
+if (out.isTTY && (columns > out.columns || lines > out.rows)) {
+  console.error(`This code needs ${columns} x ${lines} characters. Make the window larger.`);
+}
+out.write(toText(code, { colors }));
+```
+
+It prints the code with block characters, 29 columns by 15 lines. Each
+character shows two modules, one above the other.
+
+| Option | Values | Default | Meaning |
+|---|---|---|---|
+| `style` | `'half_blocks'`, `'full_blocks'`, `'hash'` | `'half_blocks'` | `half_blocks` draws two modules per character (`▀`, `▄`, `█`). `full_blocks` (`██`) and `hash` (`##`) use two characters per module and one line per module row. |
+| `margin` | 0 to 16 | `2` | Light modules on each side (the quiet zone). Decimals are cut off. |
+| `invert` | `true`, `false` | `false` | Swaps dark and light. Use it only when the user asks for it. |
+| `colors` | `'none'`, `'ansi'` | `'none'` | `'ansi'` sets black on bright white on every line, so the code also shows dark on light in a dark terminal theme. |
+
+- Use `style: 'hash'` when the terminal does not use UTF-8, or shows the
+  block characters two columns wide (some Chinese, Japanese and Korean
+  settings do).
+- Without `'ansi'`, a dark terminal theme shows the code light on dark. Some
+  phone scanners may not read that.
+- The default margin is 2, not 4, so that a version 6 code fits an 80 × 24
+  terminal. Pass `margin: 4` when there is room.
+- An unknown `style` or `colors` value throws a `QRKudeError`
+  (`'invalid argument'`).
+
+More tips (line spacing, Windows, keeping the code small) are in the guide:
+[Showing a code in a terminal](../../docs/GUIDE.md#showing-a-code-in-a-terminal).
+
 ## Content helpers
 
 These functions build the text for common QR code contents. Pass the result
@@ -501,7 +548,7 @@ inside a page. `@kudelink/qrkude` is built for that:
 | `error.kind` | `error.code` | When |
 |---|---|---|
 | `'parse error'` | `'parse'` | The style document is malformed or breaks a reader rule. |
-| `'invalid argument'` | `'invalid-argument'` | Encoding options are out of range, such as `minVersion: 0`. This is raised by the encoding step, not by `parseDocument`. |
+| `'invalid argument'` | `'invalid-argument'` | Encoding options are out of range, such as `minVersion: 0`. This is raised by the encoding step, not by `parseDocument`. `toText` and `textSize` raise it for an unknown `style` or `colors`. |
 | `'data too long'` | `'data-too-long'` | The text does not fit in a QR code with the given options. |
 
 ```js
@@ -629,6 +676,19 @@ All symbols come from `@kudelink/qrkude` unless noted. Types are TypeScript.
 | `CanvasGradientLike` | `{ addColorStop(offset: number, color: string): void }` | A canvas gradient. |
 | `CanvasImage` | `any` | Anything `drawImage` accepts. |
 
+### Text output
+
+| Symbol | Signature | Description |
+|---|---|---|
+| `toText` | `(code: QRCode, options?: TextOptions) => string` | The module grid as text (SPEC section 14). Every line ends with `"\n"`. Throws `QRKudeError` (`'invalid argument'`) for an unknown `style` or `colors`. |
+| `textSize` | `(code: QRCode, options?: TextOptions) => TextSize` | The size of `toText` with the same options, without building the text. |
+| `TextOptions` | `{ style?: TextStyle; margin?: number; invert?: boolean; colors?: TextColors }` | Defaults: `'half_blocks'`, 2, `false`, `'none'`. `margin` is truncated toward zero, then clamped to 0–16; NaN gives 0. |
+| `TextSize` | `{ columns: number; lines: number }` | Characters per line (ANSI codes take none) and number of lines. |
+| `TextStyle` | `'half_blocks' \| 'full_blocks' \| 'hash'` | Characters used: `▀ ▄ █` (two modules each), `██` or `##` (one module each). |
+| `TextColors` | `'none' \| 'ansi'` | `'ansi'` wraps every line in `ESC[30;107m` … `ESC[0m` (black on bright white). |
+| `TEXT_STYLES` | `readonly TextStyle[]` | `['half_blocks', 'full_blocks', 'hash']`. |
+| `TEXT_COLORS` | `readonly TextColors[]` | `['none', 'ansi']`. |
+
 ### Geometry and layout
 
 | Symbol | Signature | Description |
@@ -716,8 +776,8 @@ everything above, including the element exports, as `window.QRKude`.
 
   Use canvas or PNG output when file size matters.
 - **Same output everywhere.** For the same text and style, the SVG is
-  byte-for-byte identical to the other QRKude ports. Shared conformance
-  vectors check this.
+  byte-for-byte identical to the other QRKude ports. So is the output of
+  `toText` for the same options. Shared conformance vectors check this.
 - **Limitations.**
   - The whole text is encoded as one segment: numeric, alphanumeric or byte.
     Mixed content is not split into segments, so some codes are a version

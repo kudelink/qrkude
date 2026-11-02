@@ -1,7 +1,7 @@
 // Copyright 2026 The QRKude Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Conformance: spec/vectors/{encode,render,payloads}.json, byte for byte.
+// Conformance: spec/vectors/{encode,render,payloads,text}.json, byte for byte.
 // Runs on the VM (`dart test`) and compiled to JavaScript (`dart test -p node`).
 // Outside the QRKude repository the vector tests are skipped unless
 // QRKUDE_VECTORS points to a copy of spec/vectors.
@@ -20,6 +20,25 @@ Map<String, Object?> _doc(Map<String, Object?> v) => {
     };
 
 const _missing = 'spec/vectors not found: run inside the QRKude repository or set QRKUDE_VECTORS';
+
+/// The `options` object of a text.json case (SPEC 13, 14.1).
+TextOptions _textOptions(Map<String, Object?> o) => TextOptions(
+      style: switch (o['style']) {
+        'half_blocks' => TextOutputStyle.halfBlocks,
+        'full_blocks' => TextOutputStyle.fullBlocks,
+        'hash' => TextOutputStyle.hash,
+        final s => throw StateError('unknown text style $s'),
+      },
+      margin: o['margin'] as int,
+      invert: o['invert'] as bool,
+      colors: switch (o['colors']) {
+        'none' => TextColors.none,
+        'ansi' => TextColors.ansi,
+        final c => throw StateError('unknown text colors $c'),
+      },
+    );
+
+final _ansiCode = RegExp(r'\x1B\[[0-9;]*m');
 
 void main() {
   group('encode vectors', () {
@@ -132,6 +151,36 @@ void main() {
           _ => throw StateError('unknown payload type $type'),
         };
         expect(out, v['output']);
+      });
+    }
+  });
+
+  group('text vectors', () {
+    final vectors = loadVectors('text');
+    if (vectors == null) return test('text.json', () {}, skip: _missing);
+    test('count', () => expect(vectors, isNotEmpty));
+    for (final v in vectors) {
+      test(v['name'] as String, () {
+        final text = v['text'] as String;
+        final doc = QRKudeDocument.fromJson({if (v.containsKey('encode')) 'encode': v['encode']});
+        final code = doc.encodeText(text);
+        expect(code.version, v['version'], reason: 'version');
+        expect(code.ecc.letter, v['ecc'], reason: 'ecc');
+        expect(code.mask, v['mask'], reason: 'mask');
+        if (!v.containsKey('encode')) expect(encode(text), code);
+
+        final options = _textOptions(v['options'] as Map<String, Object?>);
+        final output = toText(code, options);
+        expect(output, v['output']);
+
+        // textSize agrees with the output (ANSI codes take no columns)
+        final size = textSize(code, options);
+        expect(output, endsWith('\n'));
+        final lines = output.substring(0, output.length - 1).split('\n');
+        expect(lines, hasLength(size.lines));
+        for (final line in lines) {
+          expect(line.replaceAll(_ansiCode, '').runes.length, size.columns);
+        }
       });
     }
   });

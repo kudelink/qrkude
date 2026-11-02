@@ -13,6 +13,7 @@ Quick start::
     style = qrkude.Style.from_json('{"modules": {"shape": "dot"}}')
     svg_text = qrkude.to_svg(code, style)
     png_bytes = qrkude.to_png(code, style, size=512)  # needs qrkude[png]
+    print(qrkude.to_text(code))  # in a terminal
 """
 
 from __future__ import annotations
@@ -68,6 +69,7 @@ from .style import (
     recommended_ecc,
 )
 from .svg import encode_for_style, format_number, sanitize_id_prefix, svg, to_svg
+from .text import text_size, to_text
 
 if TYPE_CHECKING:  # pragma: no cover
     from PIL import Image
@@ -115,6 +117,8 @@ __all__ = [
     "sanitize_id_prefix",
     "to_png",
     "to_image",
+    "to_text",
+    "text_size",
     # geometry
     "Layer",
     "PathSink",

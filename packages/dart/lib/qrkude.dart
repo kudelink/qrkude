@@ -54,6 +54,7 @@ export 'src/payload.dart' show QRKudePayload;
 export 'src/style.dart';
 export 'src/svg.dart' show SvgOptions, SvgPathSink, formatNumber, layerPathData, sanitizeIdPrefix, toSvg;
 export 'src/text.dart' show normalizeString, sanitizeText;
+export 'src/text_output.dart' show TextColors, TextOptions, TextOutputStyle, textSize, toText;
 
 /// Version of this library (matches the C core's `QRK_LIB_VERSION`).
 const String qrkudeVersion = '0.1.0';

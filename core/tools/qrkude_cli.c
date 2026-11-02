@@ -13,7 +13,7 @@ static void usage(void)
 {
     fputs(
         "usage: qrkude [options] [TEXT]\n"
-        "  -o FILE        output file (.svg or .png); default: SVG on stdout\n"
+        "  -o FILE        output file (.svg or .png, or text with --text); default: stdout\n"
         "  -s FILE        style JSON file ({\"encode\":..,\"style\":..,\"svg\":..})\n"
         "  -j JSON        style JSON string\n"
         "  -p PX          PNG size in pixels (default 512)\n"
@@ -22,7 +22,12 @@ static void usage(void)
         "  -L WxH         logo dimensions\n"
         "  --stdin        read the payload from stdin (raw bytes)\n"
         "  --matrix       print the module matrix ('1' = dark)\n"
-        "  --info         print version, ecc, mask and logo damage\n",
+        "  --info         print version, ecc, mask and logo damage\n"
+        "  --text         print the code as text for a terminal (SPEC 14)\n"
+        "  --text-style S half_blocks (default), full_blocks or hash\n"
+        "  --margin N     text margin in modules, clamped to 0..16 (default 2)\n"
+        "  --invert       text: swap ink and paper\n"
+        "  --ansi         text: force black on white with ANSI colors\n",
         stderr);
 }
 
@@ -170,7 +175,10 @@ int main(int argc, char **argv)
     const char *out = NULL, *style_file = NULL, *style_json = NULL, *text = NULL;
     const char *logo_file = NULL, *logo_dims = NULL;
     int png_size = 512, aa = 3;
-    bool from_stdin = false, matrix = false, info = false;
+    bool from_stdin = false, matrix = false, info = false, text_out = false;
+    bool text_opt = false; /* a text option was given */
+    qrk_text_opts text_opts;
+    qrk_text_opts_default(&text_opts);
     /* -p and -a are validated after parsing */
 
     for (int i = 1; i < argc; i++) {
@@ -185,6 +193,18 @@ int main(int argc, char **argv)
         else if (!strcmp(a, "--stdin")) from_stdin = true;
         else if (!strcmp(a, "--matrix")) matrix = true;
         else if (!strcmp(a, "--info")) info = true;
+        else if (!strcmp(a, "--text")) text_out = true;
+        else if (!strcmp(a, "--text-style") && i + 1 < argc) {
+            const char *v = argv[++i];
+            text_opt = true;
+            if (!strcmp(v, "half_blocks")) text_opts.style = QRK_TEXT_HALF_BLOCKS;
+            else if (!strcmp(v, "full_blocks")) text_opts.style = QRK_TEXT_FULL_BLOCKS;
+            else if (!strcmp(v, "hash")) text_opts.style = QRK_TEXT_HASH;
+            else { usage(); return 2; }
+        }
+        else if (!strcmp(a, "--margin") && i + 1 < argc) { text_opts.margin = atoi(argv[++i]); text_opt = true; }
+        else if (!strcmp(a, "--invert")) { text_opts.invert = true; text_opt = true; }
+        else if (!strcmp(a, "--ansi")) { text_opts.colors = QRK_TEXT_COLORS_ANSI; text_opt = true; }
         else if (!strcmp(a, "-h") || !strcmp(a, "--help")) { usage(); return 0; }
         else if (a[0] == '-' && a[1]) { usage(); return 2; }
         else text = a;
@@ -192,6 +212,10 @@ int main(int argc, char **argv)
 
     if (png_size < 1 || png_size > 16384 || aa < 1 || aa > 4) {
         fprintf(stderr, "-p must be 1..16384 and -a 1..4\n");
+        return 2;
+    }
+    if (text_opt && !text_out) {
+        fprintf(stderr, "--text-style, --margin, --invert and --ansi need --text\n");
         return 2;
     }
 
@@ -262,8 +286,20 @@ int main(int argc, char **argv)
         }
     }
     if (info || matrix) {
-        if (!out)
+        if (!out && !text_out)
             return 0;
+    }
+
+    if (text_out) {
+        FILE *f = out ? fopen(out, "wb") : stdout;
+        if (!f) {
+            fprintf(stderr, "cannot write %s\n", out);
+            return 1;
+        }
+        qrk_text_write(&code, &text_opts, file_write, f);
+        if (out)
+            fclose(f);
+        return 0;
     }
 
     size_t olen = out ? strlen(out) : 0;

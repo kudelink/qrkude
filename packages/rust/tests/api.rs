@@ -4,9 +4,9 @@
 //! Public API behaviour beyond the conformance vectors.
 
 use qrkude::{
-    emit_layer, encode_for_style, encode_text, gradient_geometry, layout, render_rgba, render_spans, to_svg, Color,
-    Ecc, EncodeOptions, EyeShape, Label, LabelPosition, Layer, Logo, ModuleShape, Paint, PathSink, RasterOptions,
-    Style, SvgOptions,
+    emit_layer, encode_for_style, encode_text, gradient_geometry, layout, render_rgba, render_spans, text_size, to_svg,
+    to_text, write_text, Color, Ecc, EncodeOptions, EyeShape, Label, LabelPosition, Layer, Logo, ModuleShape, Paint,
+    PathSink, RasterOptions, Style, SvgOptions, TextColors, TextOptions, TextStyle,
 };
 
 /// A sink that tracks the bounding box of all end points.
@@ -147,4 +147,88 @@ fn spans_are_maximal_runs() {
         last = Some((y, x + len, c));
     })
     .unwrap();
+}
+
+const TEXT_STYLES: [TextStyle; 3] = [TextStyle::HalfBlocks, TextStyle::FullBlocks, TextStyle::Hash];
+
+#[test]
+fn text_defaults() {
+    let want = TextOptions { style: TextStyle::HalfBlocks, margin: 2, invert: false, colors: TextColors::None };
+    assert_eq!(TextOptions::default(), want);
+    assert_eq!(TextStyle::default(), TextStyle::HalfBlocks);
+    assert_eq!(TextColors::default(), TextColors::None);
+}
+
+#[test]
+fn text_margin_is_clamped_to_16() {
+    let code = encode_text("QRKude", &EncodeOptions::default()).unwrap();
+    for style in TEXT_STYLES {
+        let at = |margin| TextOptions { style, margin, ..TextOptions::default() };
+        let want = to_text(&code, &at(16));
+        for margin in [17, 255] {
+            assert_eq!(to_text(&code, &at(margin)), want, "{style:?} margin {margin}");
+            assert_eq!(text_size(&code, &at(margin)), text_size(&code, &at(16)), "{style:?} margin {margin}");
+        }
+        assert_ne!(to_text(&code, &at(15)), want, "{style:?}");
+    }
+}
+
+#[test]
+fn text_size_versions_1_and_40() {
+    let v1 = encode_text("QRKude", &EncodeOptions::default()).unwrap();
+    let v40 = encode_text("QRKude", &EncodeOptions { min_version: 40, ..Default::default() }).unwrap();
+    assert_eq!((v1.version(), v40.version()), (1, 40));
+    let half = TextOptions::default();
+    assert_eq!(text_size(&v1, &half), (25, 13));
+    assert_eq!(text_size(&v40, &half), (181, 91));
+    let hash = TextOptions { style: TextStyle::Hash, ..TextOptions::default() };
+    assert_eq!(text_size(&v40, &hash), (362, 181));
+    let full = TextOptions { style: TextStyle::FullBlocks, margin: 0, ..TextOptions::default() };
+    assert_eq!(text_size(&v40, &full), (354, 177));
+
+    // the output has that size; ANSI codes take no columns
+    for style in TEXT_STYLES {
+        for colors in [TextColors::None, TextColors::Ansi] {
+            let opts = TextOptions { style, colors, ..TextOptions::default() };
+            let text = to_text(&v40, &opts);
+            let (columns, lines) = text_size(&v40, &opts);
+            assert_eq!(text.lines().count(), lines, "{opts:?}");
+            for line in text.lines() {
+                let line = line.strip_prefix("\x1b[30;107m").and_then(|l| l.strip_suffix("\x1b[0m")).unwrap_or(line);
+                assert_eq!(line.chars().count(), columns, "{opts:?}");
+            }
+        }
+    }
+
+    // without a margin, the last half-block line has an empty bottom half (SPEC 14.3)
+    let text = to_text(&v40, &TextOptions { margin: 0, ..TextOptions::default() });
+    let last = text.lines().last().unwrap();
+    assert!(last.chars().all(|c| c == ' ' || c == '\u{2580}'), "{last:?}");
+    let inverted = to_text(&v40, &TextOptions { margin: 0, invert: true, ..TextOptions::default() });
+    let last = inverted.lines().last().unwrap();
+    assert!(last.chars().all(|c| c == '\u{2584}' || c == '\u{2588}'), "{last:?}");
+}
+
+/// A writer that fails once it has received `budget` bytes.
+struct Failing {
+    budget: usize,
+}
+
+impl core::fmt::Write for Failing {
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+        self.budget = self.budget.checked_sub(s.len()).ok_or(core::fmt::Error)?;
+        Ok(())
+    }
+}
+
+#[test]
+fn write_text_stops_at_the_first_error() {
+    let code = encode_text("QRKude", &EncodeOptions::default()).unwrap();
+    let opts = TextOptions::default();
+    let len = to_text(&code, &opts).len();
+    assert!(write_text(&code, &opts, &mut Failing { budget: len }).is_ok());
+    assert!(write_text(&code, &opts, &mut Failing { budget: len - 1 }).is_err());
+    // also through a trait object
+    let out: &mut dyn core::fmt::Write = &mut Failing { budget: 0 };
+    assert!(write_text(&code, &opts, out).is_err());
 }

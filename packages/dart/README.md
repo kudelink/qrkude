@@ -233,6 +233,59 @@ This package does not write bitmaps. For PNG use the Flutter package
 [`qrkude_flutter`](../flutter) (`QRKudePainter.toPngBytes`), or convert the
 SVG with any SVG renderer.
 
+### Text
+
+`toText(code, options)` writes the code as text, to print in a terminal: for
+example a command-line tool used over SSH, where no image viewer is
+available. Each character is a space or a block (`▀`, `▄`, `█`), so one line
+shows two rows of modules. `textSize(code, options)` returns the number of
+columns and lines, so you can check that the code fits before you print it.
+
+```dart
+import 'dart:io';
+
+import 'package:qrkude/qrkude.dart';
+
+void main() {
+  final code = encode('https://example.com');
+
+  // Colors only in a terminal, and only if the user has not set NO_COLOR.
+  final noColor = Platform.environment['NO_COLOR'] ?? '';
+  final colors = stdout.hasTerminal && noColor.isEmpty ? TextColors.ansi : TextColors.none;
+  final options = TextOptions(colors: colors);
+
+  final size = textSize(code, options);
+  if (stdout.hasTerminal && size.columns > stdout.terminalColumns) {
+    stderr.writeln('This code needs a terminal ${size.columns} columns wide.');
+  }
+  stdout.write(toText(code, options));
+}
+```
+
+`TextOptions` has four settings:
+
+- `style`: `TextOutputStyle.halfBlocks` (the default), `fullBlocks` (two
+  block characters per module, one line per row of modules) or `hash`
+  (`##` per module).
+- `margin`: the light border around the code (the quiet zone), in modules.
+  The default is 2, so that a version 6 code still fits an 80×24 terminal.
+  Values are clamped to 0..16.
+- `invert`: swaps dark and light modules.
+- `colors`: `TextColors.ansi` writes every line in black on bright white, so
+  the code also reads in a dark terminal theme. `TextColors.none` (the
+  default) writes no color codes. Use the rule of the example: `ansi` when
+  the output is a terminal and `NO_COLOR` is not set or empty, otherwise
+  `none`.
+
+Use `hash` for terminals without UTF-8, or terminals that draw the block
+characters two columns wide (common with Chinese, Japanese and Korean
+settings). The text ends with a `"\n"`: print it with `stdout.write`, not
+`print`, which adds an empty line. It shows square modules only; the style
+does not apply. Flutter apps should draw the code natively with
+[`qrkude_flutter`](../flutter) instead. More tips (line spacing, Windows, keeping the
+code small) are in the guide:
+[Showing a code in a terminal](../../docs/GUIDE.md#showing-a-code-in-a-terminal).
+
 ### Custom renderers
 
 To draw with another graphics API (a PDF library, a canvas, a plotter),
@@ -493,6 +546,11 @@ in the source have the details.
 | `String sanitizeIdPrefix(String? prefix)` | The gradient id prefix as written to the SVG. |
 | `String normalizeString(String s)` | Cuts at U+0000 and replaces unpaired surrogates (JSON string rules). |
 | `String sanitizeText(String s)` | Text as written to the SVG: `normalizeString` minus control characters. |
+| `String toText(QRCode code, [TextOptions options])` | The code as text for a terminal, see [Text](#text). |
+| `({int columns, int lines}) textSize(QRCode code, [TextOptions options])` | Columns and lines of `toText`'s output (color codes take no columns). |
+| `TextOptions({TextOutputStyle style = TextOutputStyle.halfBlocks, int margin = 2, bool invert = false, TextColors colors = TextColors.none})` | Text settings; `margin` is clamped to 0..16. |
+| `enum TextOutputStyle { halfBlocks, fullBlocks, hash }` | Characters used by `toText`. |
+| `enum TextColors { none, ansi }` | `ansi` writes every line in black on bright white. |
 
 ### Geometry (custom renderers)
 

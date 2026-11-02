@@ -24,6 +24,9 @@ SPDX-License-Identifier: Apache-2.0
   flag; `layerVisible`, `encodeForStyle` and `sanitizeIdPrefix` helpers.
 - The internal geometry engine moved to `lib/src/engine.dart`; the public
   API is unchanged.
+- Text output for terminals (SPEC 14): `toText`, `textSize`, `TextOptions`,
+  `TextOutputStyle` (half blocks, full blocks or `##`) and `TextColors`
+  (none or ANSI black on white). Byte-identical with `spec/vectors/text.json`.
 - Documentation: rewritten README (installation from the repository, styling,
   output, scannability, untrusted styles, complete API reference) and
   dartdoc comments on every public symbol (`public_member_api_docs` enabled).

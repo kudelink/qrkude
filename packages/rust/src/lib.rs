@@ -57,6 +57,7 @@ pub mod payload;
 mod raster;
 mod style;
 mod svg;
+mod text;
 
 #[cfg(feature = "json")]
 mod json;
@@ -82,6 +83,7 @@ pub use style::{
     MAX_STOPS,
 };
 pub use svg::{format_number, sanitize_id_prefix, to_svg, write_svg, SvgOptions};
+pub use text::{text_size, to_text, write_text, TextColors, TextOptions, TextStyle};
 
 #[cfg(feature = "png")]
 pub use crate::png::to_png;

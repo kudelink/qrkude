@@ -255,6 +255,45 @@ for (int layer = 0; layer < QRK_LAYER_COUNT; layer++) {
 box and the label position. `qrk_gradient_geometry_for()` gives the exact
 gradient coordinates for a layer.
 
+### Text (terminals, serial consoles)
+
+`qrk_text_write()` writes the module grid with Unicode block characters (or
+plain `#`), ready to print in a terminal and scan from the screen. It
+streams through the same callback as the SVG writer and never allocates.
+The output is identical, byte for byte, in every QRKude package
+([SPEC §14](../docs/SPEC.md#14-text-output)).
+
+```c
+qrk_text_opts text;
+qrk_text_opts_default(&text);
+text.colors = QRK_TEXT_COLORS_ANSI; /* the program decides; see below */
+
+int columns, lines;
+qrk_text_size(&code, &text, &columns, &lines); /* 25 x 13 for version 1 */
+qrk_text_write(&code, &text, to_console, NULL);
+
+/* or into a buffer, snprintf-style: returns the full length */
+char buf[8192];
+size_t len = qrk_text_to_buffer(&code, &text, buf, sizeof buf);
+```
+
+| `qrk_text_opts` field | meaning | default |
+|---|---|---|
+| `style` | `QRK_TEXT_HALF_BLOCKS`: one character for two stacked modules (the most compact). `QRK_TEXT_FULL_BLOCKS`: `██` per module. `QRK_TEXT_HASH`: `##` per module, plain ASCII | half blocks |
+| `margin` | light modules around the code (the quiet zone), clamped to 0..16 | 2 |
+| `invert` | swap ink and paper | `false` |
+| `colors` | `QRK_TEXT_COLORS_ANSI` sets black on bright white on every line with ANSI codes, so the code scans in a dark terminal theme too | `QRK_TEXT_COLORS_NONE` |
+
+Choosing the colors belongs to your program. The recommended rule: use
+`QRK_TEXT_COLORS_ANSI` when the output is a terminal (`isatty(1)`) and the
+`NO_COLOR` environment variable is not set or empty; otherwise use
+`QRK_TEXT_COLORS_NONE`, and `invert` only when the user asks for it.
+
+With half blocks and a margin of 2, a version 6 code (45 × 23) is the
+largest that fits an 80 × 24 terminal. More tips (dark themes, line
+spacing, wide characters, Windows) are in the guide:
+[Showing a code in a terminal](../docs/GUIDE.md#showing-a-code-in-a-terminal).
+
 ## Content helpers
 
 Each helper writes a ready-to-encode text into your buffer and returns the
@@ -391,6 +430,17 @@ All declarations are in [`include/qrkude.h`](include/qrkude.h).
 | `size_t qrk_svg_to_buffer(const qrk_code *, const qrk_style *, const qrk_svg_opts *, char *buf, size_t cap)` | SVG into a buffer; returns the full length |
 | `size_t qrk_format_number(double, char out[32])` | The number format used in the SVG |
 
+**Text**
+
+| Symbol | Description |
+|---|---|
+| `qrk_text_style` | `QRK_TEXT_HALF_BLOCKS`, `QRK_TEXT_FULL_BLOCKS`, `QRK_TEXT_HASH` |
+| `qrk_text_colors` | `QRK_TEXT_COLORS_NONE`, `QRK_TEXT_COLORS_ANSI` |
+| `qrk_text_opts`, `void qrk_text_opts_default(qrk_text_opts *)` | `style`, `margin` (0..16, default 2), `invert`, `colors` |
+| `qrk_status qrk_text_write(const qrk_code *, const qrk_text_opts *, qrk_write_fn, void *user)` | Stream the text (`opts` may be NULL) |
+| `size_t qrk_text_to_buffer(const qrk_code *, const qrk_text_opts *, char *buf, size_t cap)` | Text into a buffer; returns the full length |
+| `void qrk_text_size(const qrk_code *, const qrk_text_opts *, int *columns, int *lines)` | Size on screen in terminal columns and lines |
+
 **Raster**
 
 | Symbol | Description |
@@ -441,6 +491,7 @@ make -C core test               # build everything and run the unit tests
 core/build/qrkude --help        # the command-line tool
 core/build/qrkude "https://kudelink.com" -s style.json -o qr.png -p 1024
 echo -n "data" | core/build/qrkude --stdin --info --matrix
+core/build/qrkude --text --ansi "https://kudelink.com"   # print it in the terminal
 
 python3 spec/tools/gen_vectors.py     # regenerate the shared test cases
 python3 spec/tools/check_decode.py    # decode every gallery style with zxing-cpp

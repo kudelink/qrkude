@@ -79,20 +79,19 @@ void app_main(void)
         return;
     }
 
-    /* the grid as text, two characters per module, with a 2-module margin */
-    for (int y = -2; y < code.size + 2; y++) {
-        for (int x = -2; x < code.size + 2; x++)
-            fputs(qrk_get_module(&code, x, y) ? "##" : "  ", stdout);
-        fputc('\n', stdout);
-    }
+    /* the grid as text: two module rows per line, black on white */
+    qrk_text_opts text;
+    qrk_text_opts_default(&text);
+    text.colors = QRK_TEXT_COLORS_ANSI;
+    qrk_text_write(&code, &text, to_console, NULL);
 
     qrk_svg_write(&code, &style, NULL, to_console, NULL);
 }
 ```
 
 Build and run it with `idf.py build flash monitor`. The monitor shows the
-code drawn with `#` characters (a phone camera can usually read it from the
-screen if the terminal has dark text on a light background), then an SVG
+code drawn with block characters, black on white (point a phone camera at
+the screen and it opens the link), then an SVG
 document. Copy the text from `<svg` to `</svg>` into a file named `qr.svg` and
 open it in a web browser to see the style.
 
@@ -313,6 +312,46 @@ Shorter text gives bigger modules. See
 [versions and capacity](../../docs/GUIDE.md#versions-and-capacity) and
 [size in print and on screen](../../docs/GUIDE.md#size-in-print-and-on-screen).
 
+### Text (terminals, serial consoles)
+
+`qrk_text_write()` writes the module grid with Unicode block characters (or
+plain `#`), ready to print in a terminal and scan from the screen. It
+streams through the same callback as the SVG writer and never allocates.
+The output is identical, byte for byte, in every QRKude package
+([SPEC §14](../../docs/SPEC.md#14-text-output)).
+
+```c
+qrk_text_opts text;
+qrk_text_opts_default(&text);
+text.colors = QRK_TEXT_COLORS_ANSI; /* idf.py monitor understands ANSI colors */
+
+int columns, lines;
+qrk_text_size(&code, &text, &columns, &lines); /* 25 x 13 for version 1 */
+qrk_text_write(&code, &text, to_console, NULL);
+
+/* or into a buffer, snprintf-style: returns the full length */
+char buf[8192];
+size_t len = qrk_text_to_buffer(&code, &text, buf, sizeof buf);
+```
+
+| `qrk_text_opts` field | meaning | default |
+|---|---|---|
+| `style` | `QRK_TEXT_HALF_BLOCKS`: one character for two stacked modules (the most compact). `QRK_TEXT_FULL_BLOCKS`: `██` per module. `QRK_TEXT_HASH`: `##` per module, plain ASCII | half blocks |
+| `margin` | light modules around the code (the quiet zone), clamped to 0..16 | 2 |
+| `invert` | swap ink and paper | `false` |
+| `colors` | `QRK_TEXT_COLORS_ANSI` sets black on bright white on every line with ANSI codes, so the code scans in a dark terminal theme too | `QRK_TEXT_COLORS_NONE` |
+
+`idf.py monitor` understands ANSI colors, so the example turns them on. The
+Arduino IDE serial monitor does not: there, leave `colors` at
+`QRK_TEXT_COLORS_NONE` and set `invert` if the monitor has a dark
+background. If the monitor cannot show the block characters, use
+`QRK_TEXT_HASH`.
+
+With half blocks and a margin of 2, a version 6 code (45 × 23) is the
+largest that fits an 80 × 24 terminal. More tips (dark themes, line
+spacing, wide characters, Windows) are in the guide:
+[Showing a code in a terminal](../../docs/GUIDE.md#showing-a-code-in-a-terminal).
+
 ### LVGL
 
 When the project contains an LVGL component (`lvgl/lvgl` from the registry,
@@ -481,6 +520,17 @@ The component's API is the QRKude C core, `qrkude.h` (more examples in
 | `qrk_status qrk_svg_write(code, style, opts, write, user)` | stream the SVG (`opts` may be `NULL`) |
 | `size_t qrk_svg_to_buffer(code, style, opts, buf, cap)` | into a buffer, returns the full length |
 | `size_t qrk_format_number(value, out)` | numbers as QRKude writes them (3 decimals at most) |
+
+**Text**
+
+| | |
+|---|---|
+| `qrk_text_style` | `QRK_TEXT_HALF_BLOCKS`, `QRK_TEXT_FULL_BLOCKS`, `QRK_TEXT_HASH` |
+| `qrk_text_colors` | `QRK_TEXT_COLORS_NONE`, `QRK_TEXT_COLORS_ANSI` |
+| `qrk_text_opts`, `void qrk_text_opts_default(qrk_text_opts *)` | `style`, `margin` (0..16, default 2), `invert`, `colors` |
+| `qrk_status qrk_text_write(code, opts, write, user)` | stream the text (`opts` may be `NULL`) |
+| `size_t qrk_text_to_buffer(code, opts, buf, cap)` | into a buffer, returns the full length |
+| `void qrk_text_size(code, opts, &columns, &lines)` | size on screen in terminal columns and lines |
 
 **Pixels**
 

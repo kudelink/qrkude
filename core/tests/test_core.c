@@ -261,6 +261,138 @@ static void test_svg(void)
     CHECK(big_damage > 0.8);
 }
 
+/* Turns a text rendering back into modules (SPEC 14), or returns false
+ * when it has the wrong shape or an unexpected character. */
+static bool text_matches(const char *text, const qrk_code *qr, const qrk_text_opts *o)
+{
+    static const char *const half[4] = {" ", "\xE2\x96\x80", "\xE2\x96\x84", "\xE2\x96\x88"};
+    int m = o->margin < 0 ? 0 : o->margin > 16 ? 16 : o->margin, n = qr->size;
+    const char *p = text;
+    for (int y = -m; y < n + m; y += o->style == QRK_TEXT_HALF_BLOCKS ? 2 : 1) {
+        if (o->colors == QRK_TEXT_COLORS_ANSI) {
+            if (strncmp(p, "\x1b[30;107m", 9) != 0)
+                return false;
+            p += 9;
+        }
+        for (int x = -m; x < n + m; x++) {
+            bool top = qrk_get_module(qr, x, y) != o->invert;
+            bool bottom = qrk_get_module(qr, x, y + 1) != o->invert;
+            const char *want = o->style == QRK_TEXT_HALF_BLOCKS ? half[top | bottom << 1]
+                             : !top ? "  "
+                             : o->style == QRK_TEXT_HASH ? "##" : "\xE2\x96\x88\xE2\x96\x88";
+            if (strncmp(p, want, strlen(want)) != 0)
+                return false;
+            p += strlen(want);
+        }
+        if (o->colors == QRK_TEXT_COLORS_ANSI) {
+            if (strncmp(p, "\x1b[0m", 4) != 0)
+                return false;
+            p += 4;
+        }
+        if (*p++ != '\n')
+            return false;
+    }
+    return *p == 0;
+}
+
+static void test_text(void)
+{
+    qrk_encode_opts e;
+    qrk_encode_opts_default(&e);
+    e.ecc = QRK_ECC_LOW;
+    e.mask = 0;
+    e.boost_ecc = false;
+    qrk_encode_text(&code, "QRKude", &e, NULL);
+    CHECK(code.size == 21);
+
+    qrk_text_opts o;
+    qrk_text_opts_default(&o);
+    CHECK(o.style == QRK_TEXT_HALF_BLOCKS && o.margin == 2 && !o.invert &&
+          o.colors == QRK_TEXT_COLORS_NONE);
+
+    static char text[1 << 16];
+    int cols, lines;
+    /* every style, plain and inverted, with and without colors */
+    for (int style = 0; style <= QRK_TEXT_HASH; style++) {
+        for (int variant = 0; variant < 4; variant++) {
+            qrk_text_opts_default(&o);
+            o.style = (uint8_t)style;
+            o.invert = variant & 1;
+            o.colors = variant & 2 ? QRK_TEXT_COLORS_ANSI : QRK_TEXT_COLORS_NONE;
+            size_t n = qrk_text_to_buffer(&code, &o, text, sizeof text);
+            CHECK(n > 0 && n == strlen(text));
+            CHECK(qrk_text_to_buffer(&code, &o, NULL, 0) == n);
+            CHECK(text_matches(text, &code, &o));
+            qrk_text_size(&code, &o, &cols, &lines);
+            CHECK(cols == (style == QRK_TEXT_HALF_BLOCKS ? 25 : 50));
+            CHECK(lines == (style == QRK_TEXT_HALF_BLOCKS ? 13 : 25));
+        }
+    }
+
+    /* half blocks: the first line is the light margin, the last line has
+     * an empty (light) bottom half */
+    qrk_text_opts_default(&o);
+    qrk_text_to_buffer(&code, &o, text, sizeof text);
+    CHECK(strncmp(text, "                         \n", 26) == 0);
+    const char *last = text + strlen(text) - 26;
+    CHECK(strcmp(last, "                         \n") == 0);
+    o.invert = true;
+    qrk_text_to_buffer(&code, &o, text, sizeof text);
+    CHECK(strncmp(text, "\xE2\x96\x88\xE2\x96\x88", 6) == 0); /* margin is ink */
+    o.invert = false;
+    o.colors = QRK_TEXT_COLORS_ANSI;
+    qrk_text_to_buffer(&code, &o, text, sizeof text);
+    CHECK(strncmp(text, "\x1b[30;107m      ", 15) == 0);
+    CHECK(strcmp(text + strlen(text) - 39, "\x1b[30;107m" "                         " "\x1b[0m\n") == 0);
+
+    /* margin clamp: 0..16 */
+    int sizes[][2] = {{-5, 0}, {0, 0}, {1, 1}, {16, 16}, {17, 16}, {INT_MAX, 16}, {INT_MIN, 0}};
+    for (size_t i = 0; i < sizeof sizes / sizeof sizes[0]; i++) {
+        qrk_text_opts_default(&o);
+        o.style = QRK_TEXT_HASH;
+        o.margin = sizes[i][0];
+        qrk_text_size(&code, &o, &cols, &lines);
+        CHECK(lines == 21 + 2 * sizes[i][1] && cols == 2 * lines);
+        qrk_text_to_buffer(&code, &o, text, sizeof text);
+        CHECK(text_matches(text, &code, &o));
+        o.style = QRK_TEXT_HALF_BLOCKS;
+        qrk_text_size(&code, &o, &cols, &lines);
+        CHECK(cols == 21 + 2 * sizes[i][1] && lines == (cols + 1) / 2);
+    }
+
+    /* NULL options are the defaults; bad arguments write nothing */
+    size_t def = qrk_text_to_buffer(&code, NULL, text, sizeof text);
+    qrk_text_opts_default(&o);
+    CHECK(def == qrk_text_to_buffer(&code, &o, NULL, 0));
+    qrk_text_size(&code, NULL, &cols, NULL);
+    CHECK(cols == 25);
+    o.style = 3;
+    CHECK(qrk_text_write(&code, &o, NULL, NULL) == QRK_ERR_INVALID_ARGUMENT);
+    text[0] = 'x';
+    CHECK(qrk_text_to_buffer(&code, &o, text, sizeof text) == 0 && text[0] == 0);
+    qrk_text_size(&code, &o, &cols, &lines);
+    CHECK(cols == 0 && lines == 0);
+    qrk_text_opts_default(&o);
+    o.colors = 2;
+    CHECK(qrk_text_to_buffer(&code, &o, NULL, 0) == 0);
+    CHECK(qrk_text_to_buffer(NULL, NULL, NULL, 0) == 0);
+
+    /* truncation keeps the full length */
+    char small[8];
+    CHECK(qrk_text_to_buffer(&code, NULL, small, sizeof small) == def && strlen(small) == 7);
+
+    /* version 40: 181 x 91 */
+    qrk_encode_opts_default(&e);
+    e.min_version = 40;
+    CHECK(qrk_encode_text(&code, "v40", &e, NULL) == QRK_OK);
+    qrk_text_size(&code, NULL, &cols, &lines);
+    CHECK(cols == 181 && lines == 91);
+    qrk_text_opts_default(&o);
+    o.colors = QRK_TEXT_COLORS_ANSI;
+    qrk_text_to_buffer(&code, &o, text, sizeof text);
+    CHECK(text_matches(text, &code, &o));
+}
+
 static void count_span(void *user, int x, int y, int len, qrk_color color)
 {
     (void)x; (void)y; (void)len; (void)color;
@@ -421,6 +553,7 @@ int main(void)
     test_payloads();
     test_json();
     test_svg();
+    test_text();
     printf("%d checks, %d failures\n", checks, failures);
     return failures ? 1 : 0;
 }

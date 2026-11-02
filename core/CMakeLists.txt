@@ -15,7 +15,8 @@ add_library(qrkude
     src/qrk_raster.c
     src/qrk_json.c
     src/qrk_payload.c
-    src/qrk_lint.c)
+    src/qrk_lint.c
+    src/qrk_text.c)
 add_library(qrkude::qrkude ALIAS qrkude)
 target_include_directories(qrkude PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

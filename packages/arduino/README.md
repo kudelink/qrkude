@@ -85,7 +85,8 @@ into a file named `qr.svg` and open it in a web browser.
 
 The last argument of `printAscii()` (`true`) swaps light and dark, which is
 right for monitors with light text on a dark background. If the monitor
-cannot show the block characters, use `QRKude::ASCII_HASH`.
+cannot show the block characters, use `QRKude::ASCII_HASH`. See
+[Text](#text) for monitors that understand ANSI colors.
 
 The library comes with six examples (*File > Examples > QRKude* in the
 Arduino IDE, `examples/` in the folder):
@@ -354,10 +355,26 @@ void handleSvg() {
 
 ### Text
 
-`printAscii(out, style, invert, margin)` prints the grid for a serial
+`printAscii(out, style, invert, margin, ansi)` prints the grid for a serial
 monitor: `QRKude::ASCII_HALF_BLOCKS` (2 rows per line, the most compact),
 `ASCII_FULL_BLOCKS` or `ASCII_HASH` (plain `##`). `writeAscii()` does the
-same through a callback.
+same through a callback. Both follow the text output of
+[SPEC §14](../../docs/SPEC.md#14-text-output) and call the core's
+`qrk_text_write()`, so the bytes are the same as in every other QRKude
+package. The margin is clamped to 16 modules.
+
+The last argument, `ansi`, forces black on bright white with ANSI color
+codes. The code then scans in any terminal theme. Turn it on for monitors
+that understand the codes: PlatformIO's `pio device monitor`, `idf.py
+monitor`, `screen`, `minicom`. The Arduino IDE serial monitor does not, and
+would show the codes as garbage, so the default is off:
+
+```cpp
+qr.printAscii(Serial, QRKude::ASCII_HALF_BLOCKS, false, 2, true);
+```
+
+Tips for scanning from the screen are in the guide:
+[Showing a code in a terminal](../../docs/GUIDE.md#showing-a-code-in-a-terminal).
 
 ### LVGL
 
@@ -550,8 +567,8 @@ All of the C API in `qrkude.h` (`qrk_*` functions and types, see
 | `size_t svgToBuffer(char *buf, size_t cap)` | into a buffer, returns the full length |
 | `size_t writeSvg(qrk_write_fn fn, void *user)` | through a callback |
 | `qrk_svg_opts &svgOptions()` | `width`, `id_prefix` |
-| `size_t printAscii(Print &out, AsciiStyle style = ASCII_HALF_BLOCKS, bool invert = false, uint8_t margin = 2)` | text grid |
-| `size_t writeAscii(qrk_write_fn fn, void *user, style, invert, margin)` | text grid through a callback |
+| `size_t printAscii(Print &out, AsciiStyle style = ASCII_HALF_BLOCKS, bool invert = false, uint8_t margin = 2, bool ansi = false)` | text grid (SPEC §14) |
+| `size_t writeAscii(qrk_write_fn fn, void *user, style, invert, margin, ansi)` | text grid through a callback |
 | `enum AsciiStyle`: `ASCII_HALF_BLOCKS`, `ASCII_FULL_BLOCKS`, `ASCII_HASH` | text styles |
 
 **Color helpers** (static)

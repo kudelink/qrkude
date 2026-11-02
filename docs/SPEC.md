@@ -10,7 +10,7 @@ This document defines what every QRKude implementation must do. The C library
 in [`core/`](../core) is the reference implementation; the conformance vectors
 in [`spec/vectors/`](../spec/vectors) are generated from it. A port is
 conformant when it reproduces every vector **byte for byte** (SVG output,
-module matrices and payload strings), the `version`/`ecc`/`mask` values, the
+module matrices, payload strings and text output), the `version`/`ecc`/`mask` values, the
 `lint` flags, and `logoDamage` within `1e-6`.
 
 Keywords MUST/SHOULD follow RFC 2119. All coordinates are in **modules**
@@ -559,5 +559,91 @@ inverted. Vectors list flags in the order of the table.
   raw text (they test duplicate keys, limits and errors); cases with `error`
   (`parse error`, `invalid argument`) must fail with that kind of error.
 - `spec/vectors/payloads.json`: `{type, args, output}`.
+- `spec/vectors/text.json`: `{name, text, encode?, options: {style, margin,
+  invert, colors}, version, ecc, mask, output}` — `output` is the exact text
+  of section 14. Every case lists all four options.
 
 Regenerate with `make -C core && python3 spec/tools/gen_vectors.py`.
+
+## 14. Text output
+
+The module grid written as text, for terminals and serial monitors. It
+shows square modules only: the style object (section 2) does not apply.
+
+### 14.1 Options
+
+| option   | values                                | default       | meaning |
+|----------|---------------------------------------|---------------|---------|
+| `style`  | `half_blocks`, `full_blocks`, `hash`  | `half_blocks` | characters used (14.3, 14.4) |
+| `margin` | integer, clamped to 0..16             | 2             | light modules on each side (quiet zone) |
+| `invert` | boolean                               | false         | swap ink and paper |
+| `colors` | `none`, `ansi`                        | `none`        | `ansi` wraps every line in color codes (14.5) |
+
+Ports whose number type is not an integer truncate `margin` toward zero
+before clamping, and treat NaN as 0. The default margin is 2, not the 4 of the other outputs, so
+that a version 6 code fits an 80×24 terminal.
+
+### 14.2 Cells
+
+Let `n` be the modules per side and `m` the clamped margin. For every `x`,
+`y`:
+
+```
+ink(x, y) = module(x, y) XOR invert
+```
+
+`module(x, y)` is the module value of section 1.5, and light (false) outside
+`0 ≤ x, y < n`. The margin, and the row below the grid on the last
+half-block line, are therefore light, and go through `invert` like every
+other cell.
+
+### 14.3 `half_blocks`
+
+```
+for y = -m, -m + 2, ... while y < n + m:
+    for x = -m .. n + m - 1:
+        write CELL[ ink(x, y) + 2 * ink(x, y + 1) ]
+    write "\n"
+
+CELL = [" " (U+0020), "▀" (U+2580), "▄" (U+2584), "█" (U+2588)]
+```
+
+The output has `n + 2m` columns and `ceil((n + 2m) / 2)` lines. Because `n`
+is always odd, the last line always has an empty bottom half.
+
+### 14.4 `full_blocks` and `hash`
+
+One line per row, from `y = -m` to `n + m - 1`, each `x` from `-m` to
+`n + m - 1`. Each cell is two characters: `"██"` (U+2588 twice) for
+`full_blocks` or `"##"` for `hash` when `ink(x, y)`, else two spaces. The
+output has `2(n + 2m)` columns and `n + 2m` lines.
+
+### 14.5 `colors: ansi`
+
+Each line is written as:
+
+```
+ESC "[30;107m"  cells  ESC "[0m"  "\n"        (ESC = U+001B)
+```
+
+SGR 30 is black ink and SGR 107 is bright white paper (plain white, 47, is
+light gray in many terminal themes). The colors are set again on every line
+and reset before the `"\n"`, so the white background does not fill the rest
+of the line. With `ansi`, `invert` normally stays false: the colors already
+give dark ink on light paper.
+
+### 14.6 Output and size
+
+- The output is exactly the characters above, encoded as UTF-8: no byte order
+  mark, no leading or trailing blank line, and a `"\n"` after the last line.
+- Text output has no error cases once a code exists. Implementations MAY
+  reject values that the API types cannot rule out (an unknown style name, a
+  C enum out of range) as invalid arguments.
+- `text_size(code, options)` returns `(columns, lines)`: the columns of
+  14.3 or 14.4 (ANSI codes take none) and the number of lines.
+
+Choosing the colors belongs to the program, not to the library. The
+recommended rule: `ansi` when the output is a terminal and the `NO_COLOR`
+environment variable is not set or empty (as on no-color.org); otherwise
+`none`, with `invert` only when
+the user asks for it.

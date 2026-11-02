@@ -412,6 +412,61 @@ def test_logo_damage() -> None:
     assert "logo-unreadable" in qrkude.lint(code, Style.from_json({"logo": {"size": 0.9}}))
 
 
+# ---- text output --------------------------------------------------------------------
+
+
+def test_text_defaults() -> None:
+    code = qrkude.encode("QRKude")
+    out = qrkude.to_text(code)
+    assert out == qrkude.to_text(code, "half_blocks", 2, False, False)
+    assert "\x1b" not in out
+    lines = out.split("\n")
+    assert lines.pop() == ""  # a "\n" after the last line
+    assert len(lines) == 13 and all(len(line) == 25 for line in lines)
+    assert lines[0] == lines[-1] == " " * 25  # margin, and the empty half below the grid
+    assert lines[1].startswith("  █▀▀▀▀▀█ ")  # finder top
+    assert qrkude.text_size(code) == (25, 13)
+
+
+@pytest.mark.parametrize("margin, clamped", [
+    (17, 16), (10 ** 400, 16), (-3, 0), (2.9, 2), (-0.9, 0), (math.nan, 0),
+    (math.inf, 16), (-math.inf, 0),
+])
+def test_text_margin_clamp(margin: float, clamped: int) -> None:
+    code = qrkude.encode("QRKude")
+    for style in ("half_blocks", "full_blocks", "hash"):
+        assert qrkude.to_text(code, style, margin) == qrkude.to_text(code, style, clamped)
+        assert qrkude.text_size(code, style, margin) == qrkude.text_size(code, style, clamped)
+    assert qrkude.text_size(code, margin=margin)[0] == 21 + 2 * clamped
+
+
+def test_text_size() -> None:
+    v1 = qrkude.encode("QRKude")
+    v40 = qrkude.encode("QRKude", min_version=40)
+    assert qrkude.text_size(v1) == (25, 13)
+    assert qrkude.text_size(v40) == (181, 91)
+    assert qrkude.text_size(v1, "full_blocks") == qrkude.text_size(v1, "hash") == (50, 25)
+    assert qrkude.text_size(v1, margin=0) == (21, 11)
+    assert qrkude.text_size(v1, invert=True, ansi=True) == (25, 13)
+    lines = qrkude.to_text(v40).splitlines()
+    assert (len(lines[0]), len(lines)) == (181, 91)
+
+
+@pytest.mark.parametrize("style", ["ascii", "", "HALF_BLOCKS", "half-blocks", None])
+def test_text_unknown_style(style: object) -> None:
+    code = qrkude.encode("QRKude")
+    for function in (qrkude.to_text, qrkude.text_size):
+        with pytest.raises(ValueError) as info:
+            function(code, style)  # type: ignore[arg-type]
+        assert isinstance(info.value, qrkude.InvalidArgumentError)
+
+
+@pytest.mark.parametrize("margin", ["2", None, True])
+def test_text_margin_must_be_a_number(margin: object) -> None:
+    with pytest.raises(qrkude.InvalidArgumentError):
+        qrkude.to_text(qrkude.encode("QRKude"), margin=margin)  # type: ignore[arg-type]
+
+
 # ---- payloads -----------------------------------------------------------------------
 
 

@@ -62,6 +62,7 @@ include = ["src/qrkude", "tests", "README.md", "LICENSE", "NOTICE", "pyproject.t
 "../../spec/vectors/encode.json" = "tests/vectors/encode.json"
 "../../spec/vectors/render.json" = "tests/vectors/render.json"
 "../../spec/vectors/payloads.json" = "tests/vectors/payloads.json"
+"../../spec/vectors/text.json" = "tests/vectors/text.json"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -24,7 +24,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")
 CORE = os.path.join(ROOT, "core")
 PKG = os.path.join(ROOT, "packages")
 CORE_SOURCES = ["qrk_encode.c", "qrk_layout.c", "qrk_svg.c", "qrk_raster.c", "qrk_json.c",
-                "qrk_payload.c", "qrk_lint.c", "qrk_internal.h"]
+                "qrk_payload.c", "qrk_lint.c", "qrk_text.c", "qrk_internal.h"]
 IGNORE = shutil.ignore_patterns(".pio", "build", "__pycache__", "*.pyc", "sdkconfig",
                                 "sdkconfig.old", "sdkconfig.esp32*", "dependencies.lock",
                                 "managed_components", ".vscode", ".gitignore")

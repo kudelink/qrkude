@@ -398,42 +398,20 @@ size_t QRKude::svgToBuffer(char *buf, size_t cap) const
 }
 
 size_t QRKude::writeAscii(qrk_write_fn fn, void *user, AsciiStyle mode, bool invert,
-                          uint8_t margin) const
+                          uint8_t margin, bool ansi) const
 {
     if (!valid_ || !fn)
         return 0;
-    static const char *const kHalf[4] = {" ", "\xE2\x96\x80", "\xE2\x96\x84", "\xE2\x96\x88"};
-    static const char *const kFull[2] = {"  ", "\xE2\x96\x88\xE2\x96\x88"};
-    static const char *const kHash[2] = {"  ", "##"};
-    const int n = code_->size, m = margin;
-    size_t total = 0;
-    if (mode == ASCII_HALF_BLOCKS) {
-        for (int y = -m; y < n + m; y += 2) {
-            for (int x = -m; x < n + m; x++) {
-                int top = qrk_get_module(code_, x, y) != invert;
-                int bottom = y + 1 < n + m ? (qrk_get_module(code_, x, y + 1) != invert) : invert;
-                const char *s = kHalf[top | bottom << 1];
-                size_t len = strlen(s);
-                fn(user, s, len);
-                total += len;
-            }
-            fn(user, "\n", 1);
-            total++;
-        }
-    } else {
-        const char *const *cells = mode == ASCII_FULL_BLOCKS ? kFull : kHash;
-        for (int y = -m; y < n + m; y++) {
-            for (int x = -m; x < n + m; x++) {
-                const char *s = cells[qrk_get_module(code_, x, y) != invert];
-                size_t len = strlen(s);
-                fn(user, s, len);
-                total += len;
-            }
-            fn(user, "\n", 1);
-            total++;
-        }
-    }
-    return total;
+    qrk_text_opts opts;
+    qrk_text_opts_default(&opts);
+    opts.style = (uint8_t)mode;
+    opts.margin = margin;
+    opts.invert = invert;
+    opts.colors = ansi ? QRK_TEXT_COLORS_ANSI : QRK_TEXT_COLORS_NONE;
+    Forward f = {fn, user, 0};
+    if (qrk_text_write(code_, &opts, forwardWrite, &f) != QRK_OK)
+        return 0;
+    return f.len;
 }
 
 #if defined(QRKUDE_HAS_PRINT)
@@ -448,12 +426,13 @@ size_t QRKude::printSvg(Print &out) const
     return sink.total;
 }
 
-size_t QRKude::printAscii(Print &out, AsciiStyle mode, bool invert, uint8_t margin) const
+size_t QRKude::printAscii(Print &out, AsciiStyle mode, bool invert, uint8_t margin,
+                          bool ansi) const
 {
     PrintSink sink;
     sink.out = &out;
     sink.used = sink.total = 0;
-    writeAscii(PrintSink::write, &sink, mode, invert, margin);
+    writeAscii(PrintSink::write, &sink, mode, invert, margin, ansi);
     sink.flush();
     return sink.total;
 }

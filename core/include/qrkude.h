@@ -14,6 +14,7 @@
  *               qrk_render_spans()    raster output as horizontal spans
  *               qrk_render_buffer()   raster output into a pixel buffer
  *               qrk_emit_layer()      vector geometry (for QPainter, Skia...)
+ *               qrk_text_write()      module grid as text for terminals
  *
  * The library never allocates memory, except qrk_encode() when it is given a
  * NULL scratch buffer (disable with -DQRK_NO_MALLOC).
@@ -349,6 +350,47 @@ size_t qrk_svg_to_buffer(const qrk_code *code, const qrk_style *style,
 
 /* Formats a number the way every QRKude port does (max 3 decimals). */
 size_t qrk_format_number(double value, char out[32]);
+
+/* ------------------------------------------------------------------------ */
+/* Text (terminals and serial monitors, SPEC 14)                            */
+/* ------------------------------------------------------------------------ */
+
+typedef enum {
+    QRK_TEXT_HALF_BLOCKS = 0, /* " ", U+2580, U+2584, U+2588: 2 module rows per line */
+    QRK_TEXT_FULL_BLOCKS,     /* U+2588 twice or 2 spaces per module               */
+    QRK_TEXT_HASH             /* "##" or 2 spaces per module (plain ASCII)          */
+} qrk_text_style;
+
+typedef enum {
+    QRK_TEXT_COLORS_NONE = 0, /* the terminal's own colors                  */
+    QRK_TEXT_COLORS_ANSI      /* every line forced to black on bright white */
+} qrk_text_colors;
+
+typedef struct {
+    uint8_t style;  /* qrk_text_style (default HALF_BLOCKS)                 */
+    int margin;     /* light modules on each side, clamped to 0..16 (2)     */
+    bool invert;    /* swap ink and paper (default false)                   */
+    uint8_t colors; /* qrk_text_colors (default NONE)                       */
+} qrk_text_opts;
+
+void qrk_text_opts_default(qrk_text_opts *opts);
+
+/* Writes the module grid as UTF-8 text, one "\n" after every line. `opts`
+ * may be NULL for the defaults. Unknown style or colors values return
+ * QRK_ERR_INVALID_ARGUMENT before anything is written. */
+qrk_status qrk_text_write(const qrk_code *code, const qrk_text_opts *opts,
+                          qrk_write_fn write, void *user);
+
+/* Writes NUL-terminated text into buf. Returns the full length in bytes
+ * (without the NUL) even when it does not fit, like snprintf; call with
+ * buf = NULL, cap = 0 to measure. */
+size_t qrk_text_to_buffer(const qrk_code *code, const qrk_text_opts *opts,
+                          char *buf, size_t cap);
+
+/* Size on screen: terminal columns and lines (ANSI codes take no columns).
+ * Either pointer may be NULL. Both are 0 when the arguments are invalid. */
+void qrk_text_size(const qrk_code *code, const qrk_text_opts *opts, int *columns,
+                   int *lines);
 
 /* ------------------------------------------------------------------------ */
 /* Raster                                                                   */

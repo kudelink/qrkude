@@ -14,6 +14,7 @@ to what you need:
 - [Logos](#logos)
 - [Colors and contrast](#colors-and-contrast)
 - [Size in print and on screen](#size-in-print-and-on-screen)
+- [Showing a code in a terminal](#showing-a-code-in-a-terminal)
 - [Testing your codes](#testing-your-codes)
 - [Troubleshooting](#troubleshooting)
 - [Glossary](#glossary)
@@ -288,6 +289,80 @@ you.
   crisp on small displays.
 - Small monochrome displays (OLED, e-paper) work best with plain square or
   slightly rounded modules and a 2 to 4 module quiet zone.
+
+## Showing a code in a terminal
+
+Command-line tools often run where no image viewer exists: over SSH, in a
+container, on a serial console. QRKude can write a code as **text** instead,
+with Unicode block characters, so it appears in the terminal and a phone
+can scan it from the screen. Every package has it: `qrk_text_write()` in C,
+`to_text()` in Rust and Python, `toText()` in JavaScript and Dart, and
+`printAscii()` on Arduino. The output is the same, byte for byte, everywhere
+(the exact rules are in [SPEC §14](SPEC.md#14-text-output)).
+
+There are three text styles:
+
+| style | characters | one line holds |
+|---|---|---|
+| `half_blocks` (default) | ` ` `▀` `▄` `█`: one character for two stacked modules | two rows of modules |
+| `full_blocks` | `██` or two spaces per module | one row |
+| `hash` | `##` or two spaces per module, plain ASCII | one row |
+
+Half blocks are the most compact: a terminal character is about twice as
+tall as it is wide, so one character for two stacked modules gives square
+modules.
+
+Three options change the look. `margin` is the [quiet zone](#glossary) in
+modules (default 2, at most 16). `invert` swaps dark and light. `colors:
+ansi` adds ANSI color codes that set black on bright white on every line.
+
+**Size.** With half blocks and a margin of 2, the text takes:
+
+| version | modules | columns × lines | | version | modules | columns × lines |
+|---|---|---|---|---|---|---|
+| 1 | 21 | 25 × 13 | | 7 | 45 | 49 × 25 |
+| 3 | 29 | 33 × 17 | | 10 | 57 | 61 × 31 |
+| 5 | 37 | 41 × 21 | | 20 | 97 | 101 × 51 |
+| 6 | 41 | 45 × 23 | | 40 | 177 | 181 × 91 |
+
+Version 6 is the largest that fits a classic 80 × 24 terminal. Check the
+size with `text_size()` (`qrk_text_size()` in C, `textSize()` in JavaScript
+and Dart) before printing. When the code does not fit, suggest a shorter
+payload or a lower error correction level, or tell the user to enlarge the
+window.
+
+**Keep the payload small.** Uppercase alphanumeric content keeps codes small
+(see [Versions and capacity](#versions-and-capacity)). Binary data, such as
+a token or an invitation, is smaller in Base45 ([RFC 9285](https://www.rfc-editor.org/rfc/rfc9285)),
+which uses only those characters, than in base64. For example, a 91-byte
+invitation is 141 characters in Base45 and fits version 6 at level M
+(45 × 23). In base64url it is 126 characters, but in byte mode, and needs
+version 8 (53 × 27), which no longer fits.
+
+**Tips**
+
+- **Dark terminal themes.** Without colors, a dark theme shows the code light
+  on dark. zxing-cpp still decodes it, but some phone scanners may not. Use
+  `ansi` colors, or `invert` when colors are not available.
+- **Choosing colors.** That is your program's job, not the library's. The
+  recommended rule: use `ansi` when the output is a terminal and the
+  `NO_COLOR` environment variable is not set or empty. Otherwise use no colors, and
+  `invert` only when the user asks for it.
+- **Line spacing.** It must be 1.0. Extra space between lines draws light
+  stripes through the code.
+- **Character width.** The block characters have "ambiguous" East Asian
+  width. Terminals set to show such characters as wide (common with Chinese,
+  Japanese and Korean settings) draw each one two columns wide, which
+  distorts the code. Use `hash` there.
+- **Windows.** Windows Terminal works. The legacy console needs virtual
+  terminal processing for `ansi` colors and a UTF-8 code page for the
+  blocks. Otherwise use `hash` without colors.
+- **Serial monitors.** `idf.py monitor`, PlatformIO's monitor and `screen`
+  understand ANSI colors. The Arduino IDE serial monitor does not: use
+  `invert` there if its background is dark.
+- **Margin.** The text default is 2 modules, not the 4 of the other outputs,
+  so that bigger codes fit the screen. zxing-cpp decodes it. Pass 4 when you
+  have room to spare.
 
 ## Testing your codes
 

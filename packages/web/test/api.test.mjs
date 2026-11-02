@@ -267,6 +267,62 @@ test('lint messages exist for every flag', () => {
   assert.deepEqual(Q.generate('x', { style: { eyes: { ballColor: '#ff000000' } } }).lint, ['low-contrast', 'invisible']);
 });
 
+test('toText defaults: half blocks, margin 2, no invert, no colors', () => {
+  const code = Q.encode('QRKude');
+  const explicit = Q.toText(code, { style: 'half_blocks', margin: 2, invert: false, colors: 'none' });
+  assert.equal(Q.toText(code), explicit);
+  assert.equal(Q.toText(code, {}), explicit);
+  assert.equal(Q.toText(code, null), explicit);
+  assert.equal(Q.toText(code, { style: null, margin: null, invert: null, colors: null }), explicit);
+  assert.ok(!explicit.includes('\x1b'));
+  assert.deepEqual(Q.textSize(code), { columns: 25, lines: 13 });
+  assert.deepEqual(Q.textSize(code, null), { columns: 25, lines: 13 });
+});
+
+test('toText margin: truncated toward zero, clamped to 0..16, NaN is 0', () => {
+  const code = Q.encode('QRKude');
+  const cases = [[17, 16], [-3, 0], [2.9, 2], [NaN, 0], [-0.5, 0], [Infinity, 16], [-Infinity, 0], [1e300, 16]];
+  for (const [given, used] of cases) {
+    assert.equal(Q.toText(code, { margin: given }), Q.toText(code, { margin: used }), String(given));
+    assert.deepEqual(Q.textSize(code, { margin: given }), Q.textSize(code, { margin: used }), String(given));
+  }
+  assert.deepEqual(Q.textSize(code, { margin: 17 }), { columns: 53, lines: 27 });
+  assert.deepEqual(Q.textSize(code, { margin: -3 }), { columns: 21, lines: 11 });
+});
+
+test('textSize for versions 1 and 40', () => {
+  const v1 = Q.encode('QRKude');
+  const v40 = Q.encode('QRKude', { minVersion: 40 });
+  assert.equal(v1.version, 1);
+  assert.equal(v40.version, 40);
+  assert.deepEqual(Q.textSize(v1), { columns: 25, lines: 13 });
+  assert.deepEqual(Q.textSize(v40), { columns: 181, lines: 91 });
+  assert.deepEqual(Q.textSize(v1, { style: 'full_blocks' }), { columns: 50, lines: 25 });
+  assert.deepEqual(Q.textSize(v40, { style: 'hash', margin: 4 }), { columns: 370, lines: 185 });
+  // ANSI codes take no columns
+  assert.deepEqual(Q.textSize(v40, { colors: 'ansi' }), Q.textSize(v40));
+  const lines = Q.toText(v40).split('\n');
+  assert.equal(lines.pop(), '');
+  assert.equal(lines.length, 91);
+  assert.ok(lines.every((l) => l.length === 181));
+  // the last half-block line has an empty bottom half
+  assert.ok(!/[▄█]/.test(lines[90]));
+});
+
+test('toText rejects unknown style and colors values as invalid arguments', () => {
+  const code = Q.encode('QRKude');
+  const invalid = (e) => e instanceof Q.QRKudeError && e.code === 'invalid-argument' && e.kind === 'invalid argument';
+  for (const fn of [Q.toText, Q.textSize]) {
+    assert.throws(() => fn(code, { style: 'dots' }), invalid);
+    assert.throws(() => fn(code, { style: 'HALF_BLOCKS' }), invalid);
+    assert.throws(() => fn(code, { colors: 'ansi256' }), invalid);
+    assert.throws(() => fn(code, { colors: true }), invalid);
+    assert.throws(() => fn(code, { margin: '4' }), invalid);
+  }
+  assert.deepEqual([...Q.TEXT_STYLES], ['half_blocks', 'full_blocks', 'hash']);
+  assert.deepEqual([...Q.TEXT_COLORS], ['none', 'ansi']);
+});
+
 test('the element entry can be imported outside the browser', async () => {
   const mod = await import('../dist/element.mjs');
   assert.equal(typeof mod.QRKudeElement, 'function');
@@ -282,4 +338,6 @@ test('the browser bundle exposes window.QRKude', async () => {
   const c = renderCases.find((r) => r.name === 'eye-paints');
   assert.equal(sandbox.QRKude.svg(c.text, { style: c.style }), c.output);
   assert.equal(typeof sandbox.QRKude.QRKudeElement, 'function');
+  const size = sandbox.QRKude.textSize(sandbox.QRKude.encode('x'));
+  assert.equal(`${size.columns}x${size.lines}`, '25x13');
 });

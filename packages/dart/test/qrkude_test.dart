@@ -362,6 +362,63 @@ void main() {
     });
   });
 
+  group('text output (SPEC 14)', () {
+    final code = encode('QRKude'); // version 1, 21 modules per side
+    const full = '\u2588', top = '\u2580';
+
+    test('defaults', () {
+      const o = TextOptions();
+      expect(o.style, TextOutputStyle.halfBlocks);
+      expect(o.margin, 2);
+      expect(o.invert, isFalse);
+      expect(o.colors, TextColors.none);
+      expect(o, const TextOptions(style: TextOutputStyle.halfBlocks, margin: 2));
+      expect(o == const TextOptions(margin: 4), isFalse);
+      expect(toText(code), toText(code, o));
+
+      final lines = toText(code).split('\n');
+      expect(lines, hasLength(14)); // 13 lines, each ending with "\n"
+      expect(lines.last, isEmpty);
+      expect(lines.first, ' ' * 25); // two margin rows
+      expect(lines[1], startsWith('  $full${top * 5}$full')); // finder rows 0 and 1
+      expect(lines[12], ' ' * 25); // a margin row and the empty row below it
+    });
+
+    test('margin is clamped to 0..16', () {
+      expect(toText(code, const TextOptions(margin: 17)), toText(code, const TextOptions(margin: 16)));
+      expect(toText(code, const TextOptions(margin: -3)), toText(code, const TextOptions(margin: 0)));
+      expect(textSize(code, const TextOptions(margin: 17)), (columns: 53, lines: 27));
+      expect(textSize(code, const TextOptions(margin: -3)), (columns: 21, lines: 11));
+      expect(toText(code, const TextOptions(margin: -3)).split('\n').first, startsWith('$full${top * 5}$full'));
+    });
+
+    test('textSize', () {
+      expect(textSize(code), (columns: 25, lines: 13));
+      expect(textSize(code, const TextOptions(style: TextOutputStyle.fullBlocks)), (columns: 50, lines: 25));
+      expect(textSize(code, const TextOptions(style: TextOutputStyle.hash, margin: 0)), (columns: 42, lines: 21));
+      expect(textSize(code, const TextOptions(colors: TextColors.ansi)), (columns: 25, lines: 13));
+
+      final big = encode('x', const EncodeOptions(minVersion: 40));
+      expect(big.size, 177);
+      final size = textSize(big);
+      expect(size, (columns: 181, lines: 91));
+      final lines = toText(big).split('\n')..removeLast();
+      expect(lines, hasLength(size.lines));
+      expect(lines.every((l) => l.runes.length == size.columns), isTrue);
+    });
+
+    test('invert, hash and ansi', () {
+      expect(toText(code, const TextOptions(invert: true)).split('\n').first, full * 25);
+      expect(toText(code, const TextOptions(style: TextOutputStyle.hash, margin: 0)), startsWith('${'#' * 14}  '));
+      final ansi = toText(code, const TextOptions(colors: TextColors.ansi)).split('\n')..removeLast();
+      expect(ansi, hasLength(13));
+      for (final line in ansi) {
+        expect(line, startsWith('\x1B[30;107m'));
+        expect(line, endsWith('\x1B[0m'));
+      }
+    });
+  });
+
   group('hardening (SPEC 2.0, 2.2, 8.1, 8.3, 11, 12)', () {
     test('idPrefix is sanitized', () {
       expect(sanitizeIdPrefix(null), 'qrk');

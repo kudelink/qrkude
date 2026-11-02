@@ -8,7 +8,10 @@ mod common;
 
 use common::{document, encode_options, first_diff, render_doc_value, vectors};
 use qrkude::payload::{self, Event, VCard};
-use qrkude::{encode_text, lint, logo_damage, to_svg, Error, StyleDocument};
+use qrkude::{
+    encode_text, lint, logo_damage, text_size, to_svg, to_text, write_text, Error, StyleDocument, TextColors,
+    TextOptions, TextStyle,
+};
 use serde_json::Value;
 
 /// Reads a raw JSON document with the crate's reader (`None` without the
@@ -194,4 +197,74 @@ fn render_vectors() {
     } else {
         println!("{} render vectors ok", cases.len());
     }
+}
+
+/// Collects the bytes written through `core::fmt::Write`.
+struct Bytes(Vec<u8>);
+
+impl core::fmt::Write for Bytes {
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+        self.0.extend_from_slice(s.as_bytes());
+        Ok(())
+    }
+}
+
+fn text_options(v: &Value) -> TextOptions {
+    TextOptions {
+        style: match v["style"].as_str().unwrap() {
+            "half_blocks" => TextStyle::HalfBlocks,
+            "full_blocks" => TextStyle::FullBlocks,
+            "hash" => TextStyle::Hash,
+            other => panic!("unknown text style {other}"),
+        },
+        margin: u8::try_from(v["margin"].as_u64().unwrap()).unwrap(),
+        invert: v["invert"].as_bool().unwrap(),
+        colors: match v["colors"].as_str().unwrap() {
+            "none" => TextColors::None,
+            "ansi" => TextColors::Ansi,
+            other => panic!("unknown text colors {other}"),
+        },
+    }
+}
+
+#[test]
+fn text_vectors() {
+    let Some(cases) = vectors("text") else { return };
+    assert!(!cases.is_empty());
+    let mut failures = Vec::new();
+    for case in &cases {
+        let name = case["name"].as_str().unwrap();
+        let code = encode_text(case["text"].as_str().unwrap(), &encode_options(case.get("encode"))).unwrap();
+        let got = (code.version() as u64, code.ecc().letter().to_string(), code.mask() as u64);
+        let want =
+            (case["version"].as_u64().unwrap(), case["ecc"].as_str().unwrap().to_string(), case["mask"].as_u64().unwrap());
+        if got != want {
+            failures.push(format!("{name}: got {got:?}, want {want:?}"));
+            continue;
+        }
+
+        let opts = text_options(&case["options"]);
+        let want_text = case["output"].as_str().unwrap();
+        let text = to_text(&code, &opts);
+        if text != want_text {
+            failures.push(format!("{name}: text differs {}", first_diff(&text, want_text)));
+        }
+        let mut streamed = Bytes(Vec::new());
+        write_text(&code, &opts, &mut streamed).unwrap();
+        if streamed.0 != want_text.as_bytes() {
+            failures.push(format!("{name}: write_text differs from the vector"));
+        }
+
+        // (columns, lines) on screen: ANSI codes take no columns
+        let widths: Vec<usize> = want_text
+            .lines()
+            .map(|line| line.replace("\x1b[30;107m", "").replace("\x1b[0m", "").chars().count())
+            .collect();
+        let (columns, lines) = text_size(&code, &opts);
+        if lines != widths.len() || widths.iter().any(|&w| w != columns) {
+            failures.push(format!("{name}: text_size {:?}, output has {} lines of {widths:?}", (columns, lines), widths.len()));
+        }
+    }
+    assert!(failures.is_empty(), "{} of {} text vectors failed:\n{}", failures.len(), cases.len(), failures.join("\n"));
+    println!("{} text vectors ok", cases.len());
 }

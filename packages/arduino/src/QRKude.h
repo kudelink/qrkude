@@ -149,7 +149,8 @@ inline void end_write(D &, p1)
  * leave the reason in status() / errorString(). Not copyable. */
 class QRKude {
 public:
-    /* Text renderings for printAscii() / writeAscii(). */
+    /* Text renderings for printAscii() / writeAscii(): the styles of SPEC
+     * 14, same values as qrk_text_style. */
     enum AsciiStyle {
         ASCII_HALF_BLOCKS = 0, /* UTF-8 half blocks, 1 char per module, 2 rows per line */
         ASCII_FULL_BLOCKS = 1, /* UTF-8 full blocks, 2 chars per module                 */
@@ -390,16 +391,20 @@ public:
      * QRKUDE_PRINT_CHUNK-byte writes. Returns the number of bytes written. */
     size_t printSvg(Print &out) const;
 
-    /* Prints the module grid as text for a serial monitor, with `margin`
-     * light modules around it. `invert` swaps dark and light: use it when
-     * the terminal shows light text on a dark background. */
+    /* Prints the module grid as text for a serial monitor (SPEC 14, the
+     * core's qrk_text_write()), with `margin` light modules around it
+     * (clamped to 16). `invert` swaps dark and light: use it when the
+     * terminal shows light text on a dark background. `ansi` forces black
+     * on white with ANSI color codes, for terminals that understand them
+     * (idf.py monitor, PlatformIO, screen); the Arduino IDE serial monitor
+     * does not. Returns the number of bytes written. */
     size_t printAscii(Print &out, AsciiStyle style = ASCII_HALF_BLOCKS, bool invert = false,
-                      uint8_t margin = 2) const;
+                      uint8_t margin = 2, bool ansi = false) const;
 #endif
 
     /* printAscii() for any byte sink (works without Arduino's Print). */
     size_t writeAscii(qrk_write_fn fn, void *user, AsciiStyle style = ASCII_HALF_BLOCKS,
-                      bool invert = false, uint8_t margin = 2) const;
+                      bool invert = false, uint8_t margin = 2, bool ansi = false) const;
 
     /* ---- color helpers ---------------------------------------------------- */
 

@@ -7,7 +7,7 @@ that promise.
 ## How the repository fits together
 
 ```
-core/            C99 reference implementation (encoder, shapes, SVG, raster)
+core/            C99 reference implementation (encoder, shapes, SVG, raster, text)
 docs/GUIDE.md    concepts for users (how QR codes work, scannability)
 docs/STYLES.md   every style option with pictures
 docs/SPEC.md     normative description of the behaviour, for port authors

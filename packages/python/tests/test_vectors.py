@@ -16,6 +16,7 @@ from conftest import doc_of, load_vectors
 ENCODE = load_vectors("encode.json")
 RENDER = load_vectors("render.json")
 PAYLOADS = load_vectors("payloads.json")
+TEXT = load_vectors("text.json")
 
 _skip = pytest.mark.skip(reason="conformance vectors not found (set QRKUDE_VECTORS)")
 
@@ -111,3 +112,21 @@ def test_payload_vector(case: Any) -> None:
     build = getattr(qrkude.payloads, case["type"])
     args = {_snake(k): v for k, v in case["args"].items()}
     assert build(**args) == case["output"]
+
+
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+
+
+@pytest.mark.parametrize("case", _params(TEXT, lambda i, c: c["name"]))
+def test_text_vector(case: Any) -> None:
+    options = qrkude.load_document({"encode": case.get("encode", {})}).encode
+    code = qrkude.encode(case["text"], options)
+    assert (code.version, code.ecc.name, code.mask) == (case["version"], case["ecc"], case["mask"])
+    o = case["options"]
+    args = dict(style=o["style"], margin=o["margin"], invert=o["invert"], ansi=o["colors"] == "ansi")
+    output = qrkude.to_text(code, **args)
+    assert output == case["output"]
+    lines = _ANSI.sub("", output).split("\n")
+    assert lines.pop() == ""  # a "\n" after the last line
+    assert qrkude.text_size(code, **args) == (len(lines[0]), len(lines))
+    assert all(len(line) == len(lines[0]) for line in lines)

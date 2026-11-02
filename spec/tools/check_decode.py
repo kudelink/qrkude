@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Renders every style in spec/cases/gallery.json with the reference CLI
 (SVG via cairosvg and the built-in rasterizer) and decodes the result with
-zxing-cpp. Optionally writes a contact sheet.
+zxing-cpp. Optionally writes a contact sheet. Then decodes every text vector
+of spec/vectors/text.json (SPEC 14).
 
     pip install zxing-cpp cairosvg pillow
     python spec/tools/check_decode.py --cli core/build/qrkude [--sheet out.png]
@@ -12,6 +13,7 @@ import argparse
 import io
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -41,6 +43,45 @@ def decode(img):
     return [r.text for r in results]
 
 
+# Text vectors (SPEC 14): each character back to one or two module rows.
+HALF = {" ": (0, 0), "\u2580": (1, 0), "\u2584": (0, 1), "\u2588": (1, 1)}
+WIDE = {"  ": 0, "\u2588\u2588": 1, "##": 1}
+
+
+def text_bitmap(output, invert, scale=8):
+    """The modules of a text vector, dark = black, as a terminal with dark
+    ink on light paper would show them."""
+    rows = []
+    for line in output.splitlines():
+        line = re.sub(r"\x1b\[[0-9;]*m", "", line)
+        if all(c in HALF for c in line):
+            rows.append([HALF[c][0] for c in line])
+            rows.append([HALF[c][1] for c in line])
+        else:
+            rows.append([WIDE[line[i:i + 2]] for i in range(0, len(line), 2)])
+    img = Image.new("L", (len(rows[0]) * scale, len(rows) * scale), 255)
+    d = ImageDraw.Draw(img)
+    for y, row in enumerate(rows):
+        for x, ink in enumerate(row):
+            if ink != invert:
+                d.rectangle((x * scale, y * scale, (x + 1) * scale - 1, (y + 1) * scale - 1), fill=0)
+    return img
+
+
+def check_text(path):
+    failures = 0
+    cases = json.load(open(path, encoding="utf-8"))
+    for case in cases:
+        img = text_bitmap(case["output"], case["options"]["invert"])
+        # try_invert=False: light-on-dark must not decode by accident
+        got = [r.text for r in zxingcpp.read_barcodes(img, try_invert=False)]
+        if got != [case["text"]]:
+            failures += 1
+            print(f"FAIL text {case['name']}: {got!r}")
+    print(f"{len(cases)} text vectors, {failures} decode failures")
+    return failures
+
+
 def logo_png(path, size=64):
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
@@ -58,7 +99,12 @@ def main():
     ap.add_argument("--cases", default=os.path.join(ROOT, "spec", "cases", "gallery.json"))
     ap.add_argument("--sheet", help="write a contact sheet PNG")
     ap.add_argument("--size", type=int, default=360)
+    ap.add_argument("--text", default=os.path.join(ROOT, "spec", "vectors", "text.json"),
+                    help="text vectors to decode")
+    ap.add_argument("--text-only", action="store_true", help="only decode the text vectors")
     args = ap.parse_args()
+    if args.text_only:
+        return 1 if check_text(args.text) else 0
 
     cases = json.load(open(args.cases))
     tmp = tempfile.mkdtemp(prefix="qrkude-")
@@ -113,6 +159,7 @@ def main():
         print("sheet:", args.sheet)
 
     print(f"{len(cases)} styles, {failures} decode failures")
+    failures += check_text(args.text)
     return 1 if failures else 0
 
 

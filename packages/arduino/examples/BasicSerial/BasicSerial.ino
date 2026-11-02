@@ -48,7 +48,10 @@ void setup()
     Serial.println("LMQH"[qr.ecc()]);
 
     /* Light text on a dark terminal: pass invert = true. QRKude::ASCII_HASH
-     * prints plain ASCII when the monitor does not support UTF-8. */
+     * prints plain ASCII when the monitor does not support UTF-8. Monitors
+     * that understand ANSI colors (pio device monitor, screen) can force
+     * black on white instead:
+     *   qr.printAscii(Serial, QRKude::ASCII_HALF_BLOCKS, false, 2, true); */
     qr.printAscii(Serial, QRKude::ASCII_HALF_BLOCKS, true);
 
 #ifndef TEXT_ONLY

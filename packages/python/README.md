@@ -40,7 +40,7 @@ pip install "qrkude[png]"   # adds PNG output through Pillow
 
 | Extra | Installs | Needed for |
 |---|---|---|
-| (none) | nothing | encoding, SVG, lint, payload helpers, CLI with SVG output |
+| (none) | nothing | encoding, SVG, text, lint, payload helpers, CLI with SVG output |
 | `png` | Pillow 13 or newer (Python 3.11+) | `to_png`, `to_image`, `qrkude ... -o file.png` |
 | `test` | pytest; Pillow 13 on Python 3.11+ | running the test suite |
 
@@ -250,6 +250,54 @@ for size in (200, 512):
 A whole number of pixels per module gives the sharpest edges. For print,
 use the SVG or make sure each module is large enough at the printed size. See
 [size in print and on screen](../../docs/GUIDE.md#size-in-print-and-on-screen).
+
+**Text** needs no dependencies. `to_text` writes the code as text, for
+command line tools, SSH sessions and serial consoles. It draws square modules
+only: the style does not apply. Save this as `terminal.py` and run
+`python terminal.py`:
+
+```python
+import os
+import shutil
+import sys
+
+import qrkude
+
+code = qrkude.encode("https://example.com")
+
+# Colors only in a terminal, and only when NO_COLOR is not set.
+ansi = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
+
+columns, lines = qrkude.text_size(code)
+screen = shutil.get_terminal_size()
+if columns > screen.columns or lines > screen.lines:
+    print("This code needs %d x %d characters. Make the window larger." % (columns, lines),
+          file=sys.stderr)
+print(qrkude.to_text(code, ansi=ansi), end="")
+```
+
+It prints the code with block characters, 29 columns by 15 lines. Each
+character shows two modules, one above the other. The text ends with a
+line break, hence `end=""`.
+
+- `style`: `"half_blocks"` (the default) draws two modules per character
+  (`▀`, `▄`, `█`). `"full_blocks"` (`██`) and `"hash"` (`##`) use two
+  characters per module and one line per module row. Other names raise
+  `InvalidArgumentError`.
+- `margin`: light modules on each side (the quiet zone), 2 by default,
+  clamped to 0..16. Decimals are cut off.
+- `invert=True` swaps dark and light. Use it only when the user asks for it.
+- `ansi=True` adds ANSI color codes (escape sequences that terminals turn
+  into colors): black on bright white on every line. The code then shows
+  dark on light in a dark terminal theme too.
+- Use `style="hash"` when the terminal does not use UTF-8, or shows the block
+  characters two columns wide (some Chinese, Japanese and Korean settings do).
+
+With half blocks and a margin of 2, a version 6 code (45 x 23) is the
+largest that fits an 80 x 24 terminal. The output is the same, byte for
+byte, in every QRKude library ([SPEC §14](../../docs/SPEC.md#14-text-output)).
+More tips are in the guide:
+[showing a code in a terminal](../../docs/GUIDE.md#showing-a-code-in-a-terminal).
 
 ## Content helpers
 
@@ -510,7 +558,7 @@ Colors (`Color`) are integers `0xRRGGBBAA`. Lengths are in modules.
 | `QRCode.is_dark(x: int, y: int) -> bool` | True for a dark module; outside the grid is light. |
 | `QRCode.modules -> bytes` | Row-major module bytes, 1 = dark. |
 | `QRCode.matrix() -> list[list[bool]]` | The grid as rows of booleans. |
-| `QRCode.to_text(dark: str = "1", light: str = "0") -> str` | The grid as lines of text. |
+| `QRCode.to_text(dark: str = "1", light: str = "0") -> str` | The grid as lines of `1` and `0`, without a quiet zone. For a terminal, use `to_text(code)`. |
 | `Ecc` | `IntEnum`: `L`, `M`, `Q`, `H` (about 7, 15, 25 and 30% recovery). `str(Ecc.H) == "H"`. |
 | `Ecc.parse(value: Ecc \| str \| int) -> Ecc` | Accepts an `Ecc`, `"L"`/`"M"`/`"Q"`/`"H"` or 0-3. |
 | `Mode` | `IntEnum`: `NUMERIC`, `ALPHANUMERIC`, `BYTE`. `str(Mode.BYTE) == "byte"`. |
@@ -565,6 +613,8 @@ Colors (`Color`) are integers `0xRRGGBBAA`. Lengths are in modules.
 | `qrkude.png.to_image(code, style=None, size=512, logo=None, *, height=None, supersample=4, label=True, font=None)` | `height` (default from the canvas shape), samples per axis (1-8), draw the caption or not, a Pillow font for the caption. |
 | `qrkude.png.PolygonSink(scale=1.0, dx=0.0, dy=0.0, tolerance=0.1)` | A path sink that flattens arcs into point lists in `.polygons`. |
 | `qrkude.png.MAX_SIDE`, `MAX_PIXELS`, `MAX_SAMPLES`, `MAX_LOGO_PIXELS` | PNG limits: 16384 px per side, 2^26 pixels, 2^26 samples per mask, 2^24 logo pixels. |
+| `to_text(code: QRCode, style: str = "half_blocks", margin: int = 2, invert: bool = False, ansi: bool = False) -> str` | The code as text for a terminal (see [Output](#output)); every line ends with `"\n"`. `style` is `"half_blocks"`, `"full_blocks"` or `"hash"`. |
+| `text_size(code: QRCode, style: str = "half_blocks", margin: int = 2, invert: bool = False, ansi: bool = False) -> tuple[int, int]` | `(columns, lines)` that `to_text` fills on screen. |
 | `format_number(value: float) -> str` | Numbers as written in the SVG (up to 3 decimals). |
 | `sanitize_id_prefix(prefix: str \| None) -> str` | The gradient id prefix as written. |
 

@@ -39,20 +39,6 @@ static void stdout_write(void *user, const char *data, size_t len)
     fwrite(data, 1, len, stdout);
 }
 
-/* Two module rows per text line with Unicode half blocks. */
-static void print_half_blocks(const qrk_code *code, int margin)
-{
-    static const char *const cells[4] = {" ", "\xE2\x96\x80", "\xE2\x96\x84", "\xE2\x96\x88"};
-    for (int y = -margin; y < code->size + margin; y += 2) {
-        for (int x = -margin; x < code->size + margin; x++) {
-            int top = qrk_get_module(code, x, y);
-            int bottom = qrk_get_module(code, x, y + 1);
-            fputs(cells[top | bottom << 1], stdout);
-        }
-        fputc('\n', stdout);
-    }
-}
-
 static void count_span(void *user, int x, int y, int len, qrk_color color)
 {
     (void)x;
@@ -100,7 +86,13 @@ void app_main(void)
         if (lint & flag)
             ESP_LOGW(TAG, "lint: %s", qrk_lint_name(flag));
 
-    print_half_blocks(&s_code, 2);
+    /* Text for the console (SPEC 14): half blocks, two module rows per line.
+     * idf.py monitor understands ANSI colors, which force black on white so
+     * the code scans in a dark terminal theme too. */
+    qrk_text_opts text;
+    qrk_text_opts_default(&text);
+    text.colors = QRK_TEXT_COLORS_ANSI;
+    qrk_text_write(&s_code, &text, stdout_write, NULL);
 
     printf("----- SVG -----\n");
     qrk_svg_write(&s_code, &style, &svg, stdout_write, NULL);
